@@ -1,0 +1,19 @@
+#  version: '3.9'
+
+services:
+  postgres:
+    container_name: luma-postgres
+    image: postgres:latest
+    restart: always
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: luma-postgres
+      POSTGRES_PASSWORD: luma-postgres
+      POSTGRES_DB: luma-postgres
+
+volumes:
+  pgdata:
