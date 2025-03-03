@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    entrypoint: /bin/bash
+    ports:
+      - "3000:3000"  # Map host port 3000 to container port 3000
+    environment:
+      # Add any environment variables here
+      RUST_LOG: info
