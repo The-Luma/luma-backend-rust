@@ -8,9 +8,9 @@ pub async fn init_db_pool() -> Result<PgPool, Error> {
     // Load environment variables from the .env file
     dotenv().ok();
 
-    // Retrieve the DB_CONNECTION variable from the environment
-    let database_url = env::var("DB_CONNECTION")
-        .expect("DB_CONNECTION must be set in the .env file");
+    // Retrieve the database connection URL from the environment
+    let database_url = env::var("BACKEND_DB_CONNECTION")
+        .expect("BACKEND_DB_CONNECTION must be set in the .env file");
 
     // Create and return the connection pool
     PgPoolOptions::new()

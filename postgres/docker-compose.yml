@@ -9,11 +9,18 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     environment:
-      POSTGRES_USER: luma-postgres
-      POSTGRES_PASSWORD: luma-postgres
-      POSTGRES_DB: luma-postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    networks:
+      - luma-network
 
 volumes:
   pgdata:
+
+networks:
+  luma-network:
+    name: ${DOCKER_NETWORK_NAME}
+    external: true

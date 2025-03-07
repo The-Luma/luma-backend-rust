@@ -3,9 +3,15 @@ version: "3.8"
 services:
   app:
     build: .
-    entrypoint: /bin/bash
     ports:
-      - "3000:3000"  # Map host port 3000 to container port 3000
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
-      # Add any environment variables here
-      RUST_LOG: info
+      RUST_LOG: ${BACKEND_LOG_LEVEL}
+      DB_CONNECTION: ${BACKEND_DB_CONNECTION}
+    networks:
+      - luma-network
+
+networks:
+  luma-network:
+    name: ${DOCKER_NETWORK_NAME}
+    external: true
