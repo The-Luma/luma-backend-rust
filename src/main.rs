@@ -1,36 +1,52 @@
-mod db;
+mod handlers;
+mod models;
+mod services;
 
-use axum::{
-    routing::get,
-    Router,
-};
-use sqlx::PgPool;
 use std::env;
-use crate::db::{init_db_pool, run_test_query};
+use axum::{
+    routing::{post, get},
+    Router,
+    response::IntoResponse,
+};
+use dotenv::dotenv;
+use sqlx::postgres::PgPoolOptions;
+use crate::{
+    handlers::create_admin,
+    services::user::UserService,
+};
 
-async fn hello() -> &'static str {
-    "Hello, Rust!"
+async fn hello() -> impl IntoResponse {
+    "Hello Rust!"
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load environment variables
-    dotenv::dotenv().ok();
+    dotenv().ok();
+    
+    // Get database URL and JWT secret from environment
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let jwt_secret = env::var("BACKEND_JWT_SECRET").expect("JWT_SECRET must be set");
+    
+    // Create database connection pool
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await?;
 
-    // Initialize the database connection pool and run a test query
-    let db_con: PgPool = init_db_pool().await.unwrap();
-    run_test_query(&db_con).await.unwrap();
+    // Create user service
+    let service = UserService::new(pool, jwt_secret);
 
-    // Get port from environment variable or use default
-    let port = env::var("BACKEND_PORT").unwrap_or_else(|_| "3000".to_string());
-    let address = format!("0.0.0.0:{}", port);
-
-    // build our application with a single route
+    // Build application with routes
     let app = Router::new()
-        .route("/", get(hello));
+        .route("/", get(hello))
+        .route("/admin", post(create_admin))
+        .with_state(service);
 
-    // run our app with hyper
-    println!("Server running on http://{}", address);
-    let listener = tokio::net::TcpListener::bind(address).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    // Run it
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    println!("Server running on http://127.0.0.1:3000");
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
