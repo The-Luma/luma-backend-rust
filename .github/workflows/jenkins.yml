@@ -2,18 +2,19 @@ name: Trigger Jenkins Build
 
 on:
   push:
-    branches:
-      - sandbox
+    branches: [ sandbox ]
   workflow_dispatch:
+    branches: [ sandbox ]
 
 jobs:
   trigger-jenkins:
     runs-on: ubuntu-latest
     env:
+      DEPLOY_CREDENTIALS: ${{ secrets.DEPLOY_CREDENTIALS }}
       JENKINS_URL: ${{ secrets.JENKINS_URL }}
       DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
     steps:
       - name: Trigger Jenkins Job
         run: |
           echo "Triggering Jenkins job..."
-          curl -X GET "$JENKINS_URL/job/LumaSandbox/build?token=$DEPLOY_TOKEN"
+          curl -X POST "https://$DEPLOY_CREDENTIALS@$JENKINS_URL/job/LumaSandbox/build?token=$DEPLOY_TOKEN"
