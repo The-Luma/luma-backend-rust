@@ -8,7 +8,7 @@ use axum::{
     Router,
     response::IntoResponse,
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use crate::{
     handlers::create_admin,
