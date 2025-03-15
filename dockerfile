@@ -8,8 +8,8 @@ WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY .env ./
-
 # Build the release binary.
+ENV POSTGRES_HOST=localhost
 RUN cargo build --release
 
 # ----------------------
