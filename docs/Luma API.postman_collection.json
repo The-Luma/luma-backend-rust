@@ -1,0 +1,437 @@
+{
+	"info": {
+		"_postman_id": "80661078-a55a-408c-88ee-c74d78c7f231",
+		"name": "Luma API",
+		"description": "API for the Luma application. All protected endpoints require an access token cookie.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "34720049"
+	},
+	"item": [
+		{
+			"name": "auth",
+			"description": "Authentication related endpoints",
+			"item": [
+				{
+					"name": "/ (Health Check)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api"]
+						},
+						"description": "Health check endpoint that returns a simple message. No authentication required."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3000/api"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"body": "Hello from Luma API!"
+						}
+					]
+				},
+				{
+					"name": "/login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"example\",\n    \"password\": \"your_password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "login"]
+						},
+						"description": "Login endpoint that authenticates a user and returns access and refresh tokens in cookies. No authentication required."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"example\",\n    \"password\": \"password123\"\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Set-Cookie",
+									"value": "access_token=...; HttpOnly; Secure"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "refresh_token=...; HttpOnly; Secure"
+								}
+							],
+							"body": {
+								"access_token": "...",
+								"token_type": "Bearer"
+							}
+						}
+					]
+				},
+				{
+					"name": "/refresh",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/refresh",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "refresh"]
+						},
+						"description": "Refresh endpoint that uses the refresh token cookie to generate new access and refresh tokens. Requires refresh_token cookie."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Set-Cookie",
+									"value": "access_token=...; HttpOnly; Secure"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "refresh_token=...; HttpOnly; Secure"
+								}
+							],
+							"body": {
+								"access_token": "...",
+								"token_type": "Bearer"
+							}
+						}
+					]
+				},
+				{
+					"name": "/me",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/me",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "me"]
+						},
+						"description": "Get current user information. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": {
+								"id": 1,
+								"username": "example",
+								"email": "example@example.com",
+								"role": "user"
+							}
+						}
+					]
+				},
+				{
+					"name": "/me (Delete Account)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"your_password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/me",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "me"]
+						},
+						"description": "Delete current user's account. Requires authentication and current password."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "No Content",
+							"code": 204
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "users",
+			"description": "User management endpoints",
+			"item": [
+				{
+					"name": "/admin (Create First Admin)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin_password\",\n    \"email\": \"admin@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/admin",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "admin"]
+						},
+						"description": "Create the first admin account. This endpoint can only be used once when there are no users in the system."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": {
+								"id": 1,
+								"username": "admin",
+								"email": "admin@example.com",
+								"role": "admin"
+							}
+						}
+					]
+				},
+				{
+					"name": "/users (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/users?search_string=john&limit=10&offset=0",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "users"],
+							"query": [
+								{
+									"key": "search_string",
+									"value": "john",
+									"description": "Optional search string to filter users"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Maximum number of results (default: 50, max: 100)"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of results to skip for pagination"
+								}
+							]
+						},
+						"description": "Search users by email or username. Supports pagination. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": {
+								"users": [
+									{
+										"id": 1,
+										"username": "john_doe",
+										"email": "john@example.com",
+										"role": "user"
+									}
+								],
+								"total": 1,
+								"limit": 10,
+								"offset": 0
+							}
+						}
+					]
+				},
+				{
+					"name": "/users/{id}",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/users/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "users", "1"]
+						},
+						"description": "Get a specific user by their ID. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": {
+								"id": 1,
+								"username": "example",
+								"email": "example@example.com",
+								"role": "user"
+							}
+						}
+					]
+				},
+				{
+					"name": "/users/{id} (Admin Delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/users/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "users", "1"]
+						},
+						"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "No Content",
+							"code": 204
+						}
+					]
+				},
+				{
+					"name": "/invitations",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"new@example.com\",\n    \"role\": \"user\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/invitations",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "invitations"]
+						},
+						"description": "Create an invitation for a new user. Requires admin role."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": {
+								"id": "uuid",
+								"email": "new@example.com",
+								"role": "user",
+								"token": "invitation-token",
+								"invited_by": 1,
+								"expires_at": "2024-03-20T00:00:00Z",
+								"created_at": "2024-03-13T00:00:00Z",
+								"used_at": null,
+								"invitation_link": "http://localhost:5173/register?token=invitation-token"
+							}
+						}
+					]
+				},
+				{
+					"name": "/register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"password123\",\n    \"invitation_token\": \"invitation-token\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/register",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "register"]
+						},
+						"description": "Register a new user with an invitation token. No authentication required."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Set-Cookie",
+									"value": "access_token=...; HttpOnly; Secure"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "refresh_token=...; HttpOnly; Secure"
+								}
+							],
+							"body": {
+								"access_token": "...",
+								"token_type": "Bearer"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

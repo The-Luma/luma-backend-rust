@@ -9,7 +9,9 @@ edition = "2021"
 load_dotenv = true
 
 [dependencies]
-axum = "0.8.1"
+axum = { version = "0.8.1", features = ["http2"] }
+axum-extra = { version = "0.10.0", features = ["cookie"] }
+tower-http = { version = "0.6.0", features = ["cors"] }
 tokio = { version = "1.44.0", features = ["rt-multi-thread"] }
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "tls-native-tls", "postgres", "chrono", "macros"] }
 dotenvy = "0.15.7"
@@ -19,3 +21,5 @@ chrono = { version = "0.4.40", features = ["serde"] }
 validator = { version = "0.20.0", features = ["derive"] }
 bcrypt = "0.17.0"
 jsonwebtoken = "9.3.1"
+uuid = { version = "1.7.0", features = ["v4", "serde"] }
+time = "0.3.34"

@@ -57,11 +57,12 @@ pub struct CreateAdminRequest {
     #[validate(length(min = 3, max = 50, message = "Username must be between 3 and 50 characters"))]
     pub username: String,
     #[validate(
-        custom(function ="validate_password_strength", message = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")
+        custom(
+            function = "validate_password_strength",
+            message = "Password must be at least 13 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+        )
     )]
     pub password: String,
-    #[validate(must_match(other = "password", message = "Passwords do not match"))]
-    pub confirm_password: String,
 }
 
 /// Safe user data for responses
@@ -90,4 +91,99 @@ pub struct Claims {
     pub username: String,  // User's username
     pub role: String,     // User's role (e.g., "admin")
     pub exp: i64,         // Expiration timestamp in seconds since Unix epoch
+}
+
+/// Request payload for user login
+#[derive(Debug, Deserialize, Validate)]
+pub struct LoginRequest {
+    #[validate(length(min = 3, max = 50, message = "Username must be between 3 and 50 characters"))]
+    pub username: String,
+    #[validate(length(min = 1, message = "Password is required"))]
+    pub password: String,
+}
+
+/// Request payload for creating an invitation
+#[derive(Debug, Deserialize, Validate)]
+pub struct CreateInvitationRequest {
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+    #[validate(length(min = 1, message = "Role is required"))]
+    pub role: String,
+}
+
+/// Request payload for user registration with invitation
+#[derive(Debug, Deserialize, Validate)]
+pub struct RegisterWithInvitationRequest {
+    #[validate(length(min = 3, max = 50, message = "Username must be between 3 and 50 characters"))]
+    pub username: String,
+    #[validate(
+        custom(
+            function = "validate_password_strength",
+            message = "Password must be at least 13 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+        )
+    )]
+    pub password: String,
+    pub invitation_token: String,
+}
+
+/// Database model for invitations
+#[derive(Debug, FromRow)]
+pub struct Invitation {
+    pub id: i32,
+    pub email: String,
+    pub role: String,
+    pub token: String,
+    pub invited_by: i32,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
+
+/// Response payload for invitation creation
+#[derive(Debug, Serialize)]
+pub struct InvitationResponse {
+    pub id: i32,
+    pub email: String,
+    pub role: String,
+    pub token: String,
+    pub invited_by: i32,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub used_at: Option<DateTime<Utc>>,
+    pub invitation_link: String,  // Frontend URL with token
+}
+
+/// Request payload for deleting an account
+#[derive(Debug, Deserialize, Validate)]
+pub struct DeleteAccountRequest {
+    #[validate(length(min = 1, message = "Password is required"))]
+    pub password: String,
+}
+
+/// Query parameters for searching users
+#[derive(Debug, Deserialize)]
+pub struct SearchUsersQuery {
+    pub search_string: Option<String>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+impl SearchUsersQuery {
+    pub fn get_limit(&self) -> i64 {
+        self.limit.unwrap_or(50).clamp(1, 100)
+    }
+
+    pub fn get_offset(&self) -> i64 {
+        self.offset.unwrap_or(0).max(0)
+    }
+}
+
+/// Response for user search results
+#[derive(Debug, Serialize)]
+pub struct SearchUsersResponse {
+    pub users: Vec<UserResponse>,
+    pub total: i64,
+    pub limit: i64,
+    pub offset: i64,
 } 

@@ -64,6 +64,25 @@ CREATE TABLE "namespace_auth" (
   "auth_level" INT NOT NULL
 );
 
+CREATE TABLE "refresh_tokens" (
+  "id" SERIAL PRIMARY KEY,
+  "user_id" INT NOT NULL REFERENCES "users" ("id"),
+  "token" VARCHAR(255) UNIQUE NOT NULL,
+  "expires_at" TIMESTAMP NOT NULL,
+  "created_at" TIMESTAMP NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "invitations" (
+  "id" SERIAL PRIMARY KEY,
+  "email" VARCHAR(255) NOT NULL,
+  "role" VARCHAR(20) NOT NULL,
+  "token" VARCHAR(255) UNIQUE NOT NULL,
+  "invited_by" INT NOT NULL REFERENCES "users" ("id"),
+  "expires_at" TIMESTAMP NOT NULL,
+  "created_at" TIMESTAMP NOT NULL DEFAULT (now()),
+  "used_at" TIMESTAMP
+);
+
 COMMENT ON COLUMN "users"."role" IS 'e.g., ''admin'' or ''user''';
 
 COMMENT ON COLUMN "document"."user_id" IS 'Owner of the document';
@@ -99,6 +118,18 @@ COMMENT ON COLUMN "namespace"."is_public" IS 'Visibility flag for the namespace'
 COMMENT ON COLUMN "namespace_doc"."vec_id" IS 'Corresponding vector record IDs in the vector database';
 
 COMMENT ON COLUMN "namespace_auth"."auth_level" IS 'Permission level within the namespace. 1 represents read-only access, 2 for read and write, and 3 for full administrative privileges (+delete, +share (basically, owner))';
+
+COMMENT ON TABLE "refresh_tokens" IS 'Stores refresh tokens for user authentication';
+COMMENT ON COLUMN "refresh_tokens"."token" IS 'Hashed refresh token';
+COMMENT ON COLUMN "refresh_tokens"."expires_at" IS 'Token expiration timestamp';
+
+COMMENT ON TABLE "invitations" IS 'Stores pending user invitations';
+COMMENT ON COLUMN "invitations"."email" IS 'Email address of the invited user';
+COMMENT ON COLUMN "invitations"."role" IS 'Role to be assigned upon account creation';
+COMMENT ON COLUMN "invitations"."token" IS 'Unique invitation token';
+COMMENT ON COLUMN "invitations"."invited_by" IS 'ID of the user who created the invitation';
+COMMENT ON COLUMN "invitations"."expires_at" IS 'When the invitation expires';
+COMMENT ON COLUMN "invitations"."used_at" IS 'When the invitation was used (null if unused)';
 
 ALTER TABLE "document" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
