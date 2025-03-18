@@ -6,6 +6,7 @@ pub struct Config {
     pub jwt_secret: String,
     pub backend_port: u16,
     pub backend_log_level: String,
+    pub frontend_url: String,
 }
 
 impl Config {

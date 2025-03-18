@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::models::user::{
     AuthResponse, Claims, CreateAdminRequest, CreateInvitationRequest,
-    DeleteAccountRequest, Invitation, InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
+    Invitation, InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
 };
 
@@ -30,6 +30,22 @@ pub struct UserService {
 impl UserService {
     pub fn new(db: PgPool, jwt_secret: String) -> Self {
         Self { db, jwt_secret }
+    }
+
+    pub async fn check_admin_setup(&self) -> Result<bool, (StatusCode, String)> {
+        // Check if admin exists
+        let admin_exists = sqlx::query_scalar!(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE role = 'admin')"
+        )
+            .fetch_one(&self.db)
+            .await
+            .map_err(|e| {
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+            })?
+            .unwrap_or(false);
+
+        // Return true if no admin exists (setup required)
+        Ok(admin_exists)
     }
 
     /// Creates a new admin user if none exists
@@ -538,7 +554,7 @@ impl UserService {
     }
 
     /// Allows an admin to delete any user account
-    pub async fn admin_delete_user(&self, target_user_id: i32, admin_id: i32) -> Result<(), (StatusCode, String)> {
+    pub async fn admin_delete_user(&self, target_user_id: i32) -> Result<(), (StatusCode, String)> {
         // Start transaction
         let mut tx = self.db.begin().await.map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Transaction error: {}", e))

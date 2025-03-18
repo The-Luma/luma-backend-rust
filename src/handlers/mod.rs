@@ -5,10 +5,12 @@ pub use user::{
     refresh_token,
     me,
     login,
+    logout,
     create_invitation,
     register_with_invitation,
     delete_account,
     admin_delete_user,
     search_users,
     get_user_by_id,
+    check_admin_setup
 }; 

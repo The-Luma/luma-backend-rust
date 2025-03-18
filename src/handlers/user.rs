@@ -6,16 +6,28 @@ use axum::{
 };
 use axum_extra::extract::cookie::CookieJar;
 use validator::Validate;
-use jsonwebtoken::{decode, DecodingKey, Validation};
-use time;
-use axum_extra::extract::cookie::Cookie;
 
 use crate::models::user::{
-    AuthResponse, CreateAdminRequest, Claims, UserResponse, LoginRequest,
+    CreateAdminRequest, UserResponse, LoginRequest,
     CreateInvitationRequest, RegisterWithInvitationRequest, InvitationResponse,
     DeleteAccountRequest, SearchUsersQuery, SearchUsersResponse,
 };
+
 use crate::services::user::UserService;
+
+#[derive(Debug, Serialize)]
+pub struct ErrorResponse {
+    pub error: String,
+    pub message: String,
+}
+
+fn error_response(status: StatusCode, message: String) -> (StatusCode, Json<serde_json::Value>) {
+    let body = json!({
+        "error": status.to_string(),
+        "message": message
+    });
+    (status, Json(body))
+}
 
 /// Handler for creating an admin account
 /// Validates the request and delegates business logic to UserService
@@ -23,14 +35,15 @@ pub async fn create_admin(
     State(service): State<UserService>,
     jar: CookieJar,
     Json(req): Json<CreateAdminRequest>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()));
+        return Err(error_response(StatusCode::BAD_REQUEST, e.to_string()));
     }
 
     // Delegate to service
     service.create_admin(req, &jar).await
+        .map_err(|(status, msg)| error_response(status, msg))
 }
 
 /// Handler for refreshing access tokens
@@ -38,16 +51,20 @@ pub async fn create_admin(
 pub async fn refresh_token(
     State(service): State<UserService>,
     jar: CookieJar,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Extract refresh token from cookie
     let refresh_token = jar
         .get("refresh_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No refresh token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No refresh token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Delegate to service
     service.refresh_token(&refresh_token, &jar).await
+        .map_err(|(status, msg)| error_response(status, msg))
 }
 
 /// Handler for getting current user information
@@ -55,19 +72,24 @@ pub async fn refresh_token(
 pub async fn me(
     State(service): State<UserService>,
     jar: CookieJar,
-) -> Result<Json<UserResponse>, (StatusCode, String)> {
+) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Extract access token from cookie
     let access_token = jar
         .get("access_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No access token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Validate token and get claims
-    let claims = service.validate_token(&access_token)?;
+    let claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Get user from database
-    let user = service.get_user_by_id(claims.sub).await?;
+    let user = service.get_user_by_id(claims.sub).await
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Return user response
     Ok(Json(user))
@@ -79,14 +101,26 @@ pub async fn login(
     State(service): State<UserService>,
     jar: CookieJar,
     Json(req): Json<LoginRequest>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()));
+        return Err(error_response(StatusCode::BAD_REQUEST, e.to_string()));
     }
 
     // Delegate to service
     service.login(req, &jar).await
+        .map_err(|(status, msg)| error_response(status, msg))
+}
+
+/// Handler for checking if admin setup is required
+/// Returns true if no admin exists in the system
+pub async fn check_admin_setup(
+    State(service): State<UserService>,
+) -> Result<Json<bool>, (StatusCode, Json<serde_json::Value>)> {
+    // Check if admin setup is required
+    service.check_admin_setup().await
+        .map_err(|(status, msg)| error_response(status, msg))
+        .map(Json)
 }
 
 /// Handler for creating an invitation
@@ -95,24 +129,30 @@ pub async fn create_invitation(
     State(service): State<UserService>,
     jar: CookieJar,
     Json(req): Json<CreateInvitationRequest>,
-) -> Result<Json<InvitationResponse>, (StatusCode, String)> {
+) -> Result<Json<InvitationResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()));
+        return Err(error_response(StatusCode::BAD_REQUEST, e.to_string()));
     }
 
     // Extract access token from cookie
     let access_token = jar
         .get("access_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No access token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Validate token and get claims
-    let claims = service.validate_token(&access_token)?;
+    let claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Create invitation using the admin's user ID from claims
-    let invitation = service.create_invitation(req, claims.sub).await?;
+    let invitation = service.create_invitation(req, claims.sub).await
+        .map_err(|(status, msg)| error_response(status, msg))?;
+
     Ok(Json(invitation))
 }
 
@@ -121,14 +161,15 @@ pub async fn register_with_invitation(
     State(service): State<UserService>,
     jar: CookieJar,
     Json(req): Json<RegisterWithInvitationRequest>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()));
+        return Err(error_response(StatusCode::BAD_REQUEST, e.to_string()));
     }
 
     // Register user
     service.register_with_invitation(req, &jar).await
+        .map_err(|(status, msg)| error_response(status, msg))
 }
 
 /// Handler for deleting the current user's account
@@ -137,24 +178,29 @@ pub async fn delete_account(
     State(service): State<UserService>,
     jar: CookieJar,
     Json(req): Json<DeleteAccountRequest>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()));
+        return Err(error_response(StatusCode::BAD_REQUEST, e.to_string()));
     }
 
     // Extract access token from cookie
     let access_token = jar
         .get("access_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No access token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Validate token and get claims
-    let claims = service.validate_token(&access_token)?;
+    let claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Delete the user's account
-    service.delete_user(claims.sub, &req.password).await?;
+    service.delete_user(claims.sub, &req.password).await
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Create an empty cookie jar with expired tokens
     let mut access_cookie = Cookie::new("access_token", "");
@@ -181,27 +227,32 @@ pub async fn admin_delete_user(
     State(service): State<UserService>,
     jar: CookieJar,
     Path(user_id): Path<i32>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Extract access token from cookie
     let access_token = jar
         .get("access_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No access token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Validate token and get claims
-    let claims = service.validate_token(&access_token)?;
+    let claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Prevent admin from deleting themselves
     if claims.sub == user_id {
-        return Err((
+        return Err(error_response(
             StatusCode::FORBIDDEN,
-            "Admins cannot delete their own account through this endpoint. Use DELETE /api/me instead.".to_string(),
+            "Admins cannot delete their own account through this endpoint. Use DELETE /api/me instead.".to_string()
         ));
     }
 
     // Delete the specified user's account
-    service.admin_delete_user(user_id, claims.sub).await?;
+    service.admin_delete_user(user_id).await
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Return success response
     Ok(StatusCode::NO_CONTENT.into_response())
@@ -213,19 +264,24 @@ pub async fn search_users(
     State(service): State<UserService>,
     jar: CookieJar,
     Query(query): Query<SearchUsersQuery>,
-) -> Result<Json<SearchUsersResponse>, (StatusCode, String)> {
+) -> Result<Json<SearchUsersResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Extract access token from cookie
     let access_token = jar
         .get("access_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No access token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Validate token and get claims
-    let _claims = service.validate_token(&access_token)?;
+    let _claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Search users
-    let response = service.search_users(query).await?;
+    let response = service.search_users(query).await
+        .map_err(|(status, msg)| error_response(status, msg))?;
     Ok(Json(response))
 }
 
@@ -234,18 +290,63 @@ pub async fn get_user_by_id(
     State(service): State<UserService>,
     jar: CookieJar,
     Path(user_id): Path<i32>,
-) -> Result<Json<UserResponse>, (StatusCode, String)> {
+) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Extract access token from cookie
     let access_token = jar
         .get("access_token")
-        .ok_or((StatusCode::UNAUTHORIZED, "No access token provided".to_string()))?
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
         .value()
         .to_string();
 
     // Validate token
-    let _claims = service.validate_token(&access_token)?;
+    let _claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
 
     // Get user
-    let user = service.get_user_by_id(user_id).await?;
+    let user = service.get_user_by_id(user_id).await
+        .map_err(|(status, msg)| error_response(status, msg))?;
     Ok(Json(user))
+}
+
+/// Handler for logging out a user
+/// Validates the session and clears authentication cookies
+pub async fn logout(
+    State(service): State<UserService>,
+    jar: CookieJar,
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
+    // Extract access token from cookie
+    let access_token = jar
+        .get("access_token")
+        .ok_or_else(|| error_response(
+            StatusCode::UNAUTHORIZED,
+            "No access token provided".to_string()
+        ))?
+        .value()
+        .to_string();
+
+    // Validate token to ensure the user is actually logged in
+    let _claims = service.validate_token(&access_token)
+        .map_err(|(status, msg)| error_response(status, msg))?;
+
+    // Create expired cookies to clear the tokens
+    let mut access_cookie = Cookie::new("access_token", "");
+    access_cookie.set_path("/");
+    access_cookie.set_max_age(time::Duration::ZERO);
+    access_cookie.set_http_only(true);
+    access_cookie.set_secure(true);
+
+    let mut refresh_cookie = Cookie::new("refresh_token", "");
+    refresh_cookie.set_path("/");
+    refresh_cookie.set_max_age(time::Duration::ZERO);
+    refresh_cookie.set_http_only(true);
+    refresh_cookie.set_secure(true);
+
+    // Add expired cookies to jar
+    let jar = jar.add(access_cookie).add(refresh_cookie);
+
+    // Return success with cleared cookies
+    Ok((StatusCode::OK, jar, Json(json!({ "message": "Logged out successfully" }))).into_response())
 } 
