@@ -44,6 +44,30 @@
 					]
 				},
 				{
+					"name": "/admin/check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/admin/check",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "admin", "check"]
+						},
+						"description": "Check if admin setup is required (no admin exists in the system). Returns true if admin setup is needed. No authentication required."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "true"
+						}
+					]
+				},
+				{
 					"name": "/login",
 					"request": {
 						"method": "POST",
@@ -191,6 +215,52 @@
 							"name": "Success",
 							"status": "No Content",
 							"code": 204
+						}
+					]
+				},
+				{
+					"name": "/logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/logout",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3000",
+							"path": ["api", "logout"]
+						},
+						"description": "Logout endpoint that invalidates the current session and clears authentication cookies. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Set-Cookie",
+									"value": "access_token=; HttpOnly; Secure; Max-Age=0"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "refresh_token=; HttpOnly; Secure; Max-Age=0"
+								}
+							],
+							"body": {
+								"message": "Logged out successfully"
+							}
+						},
+						{
+							"name": "Unauthorized",
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"body": {
+								"error": "Unauthorized",
+								"message": "No access token provided"
+							}
 						}
 					]
 				}

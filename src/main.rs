@@ -7,22 +7,16 @@ use std::env;
 use axum::{
     routing::{post, get, delete},
     Router,
-    response::IntoResponse,
-    http::{self, Method, header},
+    http::{Method, header},
     middleware::from_fn_with_state,
-    extract::Path,
 };
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 use crate::{
-    handlers::{create_admin, refresh_token, me, login, create_invitation, register_with_invitation, delete_account, admin_delete_user, search_users, get_user_by_id},
+    handlers::{create_admin, refresh_token, me, login, logout, create_invitation, register_with_invitation, delete_account, admin_delete_user, search_users, get_user_by_id, check_admin_setup},
     services::user::UserService,
 };
-
-async fn hello() -> impl IntoResponse {
-    "Hello Rust!"
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,6 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get database URL and JWT secret from environment
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("BACKEND_JWT_SECRET").expect("JWT_SECRET must be set");
+    let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
     
     // Create database connection pool
     let pool = PgPoolOptions::new()
@@ -60,12 +55,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_origin(header::HeaderValue::from_static("http://localhost:5173"));
+        .allow_origin([frontend_url.parse().unwrap()]);
 
     // Public routes (no auth required)
     let public_routes = Router::new()
         .route("/", get(|| async { "Hello from Luma API!" }))
         .route("/admin", post(create_admin))
+        .route("/admin/check", get(check_admin_setup))
         .route("/login", post(login))
         .route("/refresh", post(refresh_token))
         .route("/register", post(register_with_invitation));
@@ -74,6 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let protected_routes = Router::new()
         .route("/me", get(me))
         .route("/me", delete(delete_account))
+        .route("/logout", post(logout))
         .route("/users", get(search_users))
         .route("/users/{id}", get(get_user_by_id))
         .layer(from_fn_with_state(
