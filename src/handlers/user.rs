@@ -6,16 +6,13 @@ use axum::{
 };
 use axum_extra::extract::cookie::CookieJar;
 use validator::Validate;
-use time;
-use axum_extra::extract::cookie::Cookie;
-use serde::Serialize;
-use serde_json::json;
 
 use crate::models::user::{
     CreateAdminRequest, UserResponse, LoginRequest,
     CreateInvitationRequest, RegisterWithInvitationRequest, InvitationResponse,
     DeleteAccountRequest, SearchUsersQuery, SearchUsersResponse,
 };
+
 use crate::services::user::UserService;
 
 #[derive(Debug, Serialize)]
@@ -155,6 +152,7 @@ pub async fn create_invitation(
     // Create invitation using the admin's user ID from claims
     let invitation = service.create_invitation(req, claims.sub).await
         .map_err(|(status, msg)| error_response(status, msg))?;
+
     Ok(Json(invitation))
 }
 
