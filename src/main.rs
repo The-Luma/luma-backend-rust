@@ -2,6 +2,7 @@ mod handlers;
 mod models;
 mod services;
 mod middleware;
+mod pinecone;
 
 use std::env;
 use axum::{
@@ -16,6 +17,7 @@ use tower_http::cors::CorsLayer;
 use crate::{
     handlers::{create_admin, refresh_token, me, login, logout, create_invitation, register_with_invitation, delete_account, admin_delete_user, search_users, get_user_by_id, check_admin_setup},
     services::user::UserService,
+    pinecone::PineconeService,
 };
 
 #[tokio::main]
@@ -27,6 +29,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("BACKEND_JWT_SECRET").expect("JWT_SECRET must be set");
     let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
+    
+    // Initialize Pinecone
+    let mut pinecone_service = PineconeService::new()?;
+    println!("Testing Pinecone connection...");
+    pinecone_service.check_connection().await?;
+    
+    // Get first available index
+    match pinecone_service.initialize_index().await {
+        Ok(_index) => {
+            if let Some(config) = pinecone_service.get_index_config() {
+                println!("Successfully connected to Pinecone index: {}", config.name);
+                println!("Index dimension: {}", config.dimension);
+                println!("Index metric: {:?}", config.metric);
+            }
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+            println!("Server cannot start without a Pinecone index. Please create an index first.");
+            std::process::exit(1);
+        }
+    }
     
     // Create database connection pool
     let pool = PgPoolOptions::new()
