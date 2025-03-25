@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pinecone_service.check_connection().await?;
     
     // Get first available index
-    match pinecone_service.get_first_available_index().await {
+    match pinecone_service.initialize_index().await {
         Ok(_index) => {
             if let Some(config) = pinecone_service.get_index_config() {
                 println!("Successfully connected to Pinecone index: {}", config.name);
