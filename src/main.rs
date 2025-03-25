@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Get first available index
     match pinecone_service.get_first_available_index().await {
-        Ok(_) => {
+        Ok(_index) => {
             if let Some(config) = pinecone_service.get_index_config() {
                 println!("Successfully connected to Pinecone index: {}", config.name);
                 println!("Index dimension: {}", config.dimension);
@@ -45,7 +45,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Err(e) => {
-            println!("Warning: Could not get Pinecone index: {}", e);
+            println!("Error: {}", e);
+            println!("Server cannot start without a Pinecone index. Please create an index first.");
+            std::process::exit(1);
         }
     }
     
