@@ -42,6 +42,10 @@ impl PineconeService {
     }
 
     pub async fn get_first_available_index(&mut self) -> Result<IndexModel, Box<dyn std::error::Error>> {
+        // Get the expected index name from environment
+        let expected_index_name = env::var("BACKEND_PINECONE_INDEX_NAME")
+            .expect("BACKEND_PINECONE_INDEX_NAME must be set in environment");
+
         // List all indexes
         let index_list = self.client.list_indexes().await?;
         
@@ -53,12 +57,23 @@ impl PineconeService {
             return Err("No Pinecone indexes found. Please create an index first.".into());
         }
 
-        // Get the first index
-        let first_index = &indexes[0];
-        println!("Found Pinecone index: {}", first_index.name);
+        // Find the index with matching name
+        let target_index = indexes.iter()
+            .find(|index| index.name == expected_index_name)
+            .ok_or_else(|| {
+                let available_indexes: Vec<String> = indexes.iter()
+                    .map(|i| i.name.clone())
+                    .collect();
+                format!("Pinecone index '{}' not found. Available indexes: {}", 
+                    expected_index_name,
+                    available_indexes.join(", ")
+                )
+            })?;
+
+        println!("Found Pinecone index: {}", target_index.name);
 
         // Get detailed information about the index
-        let index_details = self.client.describe_index(&first_index.name).await?;
+        let index_details = self.client.describe_index(&target_index.name).await?;
         
         // Store the index configuration
         self.index_config = Some(PineconeIndexConfig {
