@@ -31,10 +31,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
     
     // Initialize Pinecone
-    let pinecone_service = PineconeService::new()?;
+    let mut pinecone_service = PineconeService::new()?;
     println!("Testing Pinecone connection...");
     pinecone_service.check_connection().await?;
-    println!("Pinecone connection successful!");
+    
+    // Get first available index
+    match pinecone_service.get_first_available_index().await {
+        Ok(_) => {
+            if let Some(config) = pinecone_service.get_index_config() {
+                println!("Successfully connected to Pinecone index: {}", config.name);
+                println!("Index dimension: {}", config.dimension);
+                println!("Index metric: {:?}", config.metric);
+            }
+        }
+        Err(e) => {
+            println!("Warning: Could not get Pinecone index: {}", e);
+        }
+    }
     
     // Create database connection pool
     let pool = PgPoolOptions::new()
