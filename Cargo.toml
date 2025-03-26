@@ -23,4 +23,5 @@ bcrypt = "0.17.0"
 jsonwebtoken = "9.3.1"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 time = "0.3.34"
-pinecone-sdk = "0.1.0"
+pinecone-sdk = "0.1.2"
+async-openai = "0.28.0"

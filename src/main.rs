@@ -3,6 +3,7 @@ mod models;
 mod services;
 mod middleware;
 mod pinecone;
+mod openai;
 
 use std::env;
 use axum::{
@@ -18,6 +19,7 @@ use crate::{
     handlers::{create_admin, refresh_token, me, login, logout, create_invitation, register_with_invitation, delete_account, admin_delete_user, search_users, get_user_by_id, check_admin_setup},
     services::user::UserService,
     pinecone::PineconeService,
+    openai::OpenAIService,
 };
 
 #[tokio::main]
@@ -29,6 +31,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("BACKEND_JWT_SECRET").expect("JWT_SECRET must be set");
     let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
+    
+    // Initialize OpenAI
+    let openai_service = OpenAIService::new()?;
+    println!("Testing OpenAI connection...");
+    openai_service.check_connection().await?;
+    println!("Successfully connected to OpenAI");
     
     // Initialize Pinecone
     let mut pinecone_service = PineconeService::new()?;
