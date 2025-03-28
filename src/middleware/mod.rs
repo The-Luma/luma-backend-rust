@@ -9,10 +9,10 @@ use axum::{
 use axum_extra::extract::cookie::CookieJar;
 use serde_json::json;
 
-use crate::services::user::UserService;
+use crate::services::luma::LumaService;
 
 pub async fn auth(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     request: Request<Body>,
     next: Next,
@@ -45,7 +45,7 @@ pub async fn auth(
 }
 
 pub async fn require_admin(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     request: Request<Body>,
     next: Next,

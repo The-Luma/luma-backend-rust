@@ -15,7 +15,7 @@ use crate::models::user::{
     DeleteAccountRequest, SearchUsersQuery, SearchUsersResponse,
 };
 
-use crate::services::user::UserService;
+use crate::services::luma::LumaService;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -32,9 +32,9 @@ fn error_response(status: StatusCode, message: String) -> (StatusCode, Json<serd
 }
 
 /// Handler for creating an admin account
-/// Validates the request and delegates business logic to UserService
+/// Validates the request and delegates business logic to LumaService
 pub async fn create_admin(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Json(req): Json<CreateAdminRequest>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
@@ -49,9 +49,9 @@ pub async fn create_admin(
 }
 
 /// Handler for refreshing access tokens
-/// Extracts refresh token from cookie and delegates to UserService
+/// Extracts refresh token from cookie and delegates to LumaService
 pub async fn refresh_token(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Extract refresh token from cookie
@@ -72,7 +72,7 @@ pub async fn refresh_token(
 /// Handler for getting current user information
 /// Returns user data if authenticated, 401 if not
 pub async fn me(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Extract access token from cookie
@@ -100,7 +100,7 @@ pub async fn me(
 /// Handler for user login
 /// Validates credentials and returns tokens if successful
 pub async fn login(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Json(req): Json<LoginRequest>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
@@ -117,7 +117,7 @@ pub async fn login(
 /// Handler for checking if admin setup is required
 /// Returns true if no admin exists in the system
 pub async fn check_admin_setup(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
 ) -> Result<Json<bool>, (StatusCode, Json<serde_json::Value>)> {
     // Check if admin setup is required
     service.check_admin_setup().await
@@ -128,7 +128,7 @@ pub async fn check_admin_setup(
 /// Handler for creating an invitation
 /// Only authenticated users can create invitations
 pub async fn create_invitation(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Json(req): Json<CreateInvitationRequest>,
 ) -> Result<Json<InvitationResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -160,7 +160,7 @@ pub async fn create_invitation(
 
 /// Handler for registering with an invitation
 pub async fn register_with_invitation(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Json(req): Json<RegisterWithInvitationRequest>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
@@ -177,7 +177,7 @@ pub async fn register_with_invitation(
 /// Handler for deleting the current user's account
 /// Only authenticated users can delete their own account
 pub async fn delete_account(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Json(req): Json<DeleteAccountRequest>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
@@ -226,7 +226,7 @@ pub async fn delete_account(
 /// Handler for admin to delete any user account
 /// Only admin users can access this endpoint
 pub async fn admin_delete_user(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Path(user_id): Path<i32>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
@@ -263,7 +263,7 @@ pub async fn admin_delete_user(
 /// Handler for searching users
 /// Available to all authenticated users
 pub async fn search_users(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Query(query): Query<SearchUsersQuery>,
 ) -> Result<Json<SearchUsersResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -289,7 +289,7 @@ pub async fn search_users(
 
 /// Get a user by their ID
 pub async fn get_user_by_id(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
     Path(user_id): Path<i32>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -316,7 +316,7 @@ pub async fn get_user_by_id(
 /// Handler for logging out a user
 /// Validates the session and clears authentication cookies
 pub async fn logout(
-    State(service): State<UserService>,
+    State(service): State<LumaService>,
     jar: CookieJar,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Extract access token from cookie

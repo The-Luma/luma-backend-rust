@@ -2,24 +2,22 @@ mod handlers;
 mod models;
 mod services;
 mod middleware;
-mod pinecone;
-mod openai;
 
 use std::env;
 use axum::{
-    routing::{post, get, delete},
-    Router,
-    http::{Method, header},
+    http::{header, Method},
     middleware::from_fn_with_state,
+    routing::{delete, get, post},
+    Router,
 };
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
+use services::openai::OpenAIService;
+use services::pinecone::PineconeService;
 use crate::{
-    handlers::{create_admin, refresh_token, me, login, logout, create_invitation, register_with_invitation, delete_account, admin_delete_user, search_users, get_user_by_id, check_admin_setup},
-    services::user::UserService,
-    pinecone::PineconeService,
-    openai::OpenAIService,
+    handlers::{admin_delete_user, check_admin_setup, create_admin, create_invitation, delete_account, get_user_by_id, login, logout, me, refresh_token, register_with_invitation, search_users},
+    services::luma::LumaService,
 };
 
 #[tokio::main]
@@ -66,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     // Create user service
-    let service = UserService::new(pool, jwt_secret);
+    let service = LumaService::new(pool, jwt_secret);
 
     // Configure CORS
     let cors = CorsLayer::new()
