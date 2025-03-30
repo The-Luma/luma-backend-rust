@@ -11,7 +11,7 @@ use serde_json::json;
 
 use crate::services::luma::LumaService;
 
-pub async fn check_auth(
+pub async fn check_if_auth(
     State(service): State<LumaService>,
     jar: CookieJar,
     request: Request<Body>,
@@ -44,7 +44,7 @@ pub async fn check_auth(
     Ok(next.run(request).await)
 }
 
-pub async fn require_admin(
+pub async fn check_if_admin(
     State(service): State<LumaService>,
     jar: CookieJar,
     request: Request<Body>,
