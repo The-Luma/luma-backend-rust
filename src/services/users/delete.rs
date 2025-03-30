@@ -1,23 +1,13 @@
 use axum::{
     http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
 };
-use axum_extra::extract::cookie::{Cookie, CookieJar};
-use bcrypt::{hash, verify, DEFAULT_COST};
-use chrono::{DateTime, Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use sqlx::PgPool;
-use uuid::Uuid;
+use bcrypt::{verify};
+use chrono::{DateTime, Utc};
 
-use crate::models::user::{
-    AuthResponse, Claims, CreateAdminRequest, CreateInvitationRequest,
-    Invitation, InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
-    User, UserResponse, SearchUsersQuery, SearchUsersResponse,
+use crate::models::models::{
+    User
 };
-use crate::services::auth;
 use crate::services::luma::LumaService;
-
 
 pub async fn delete_user(service: &LumaService, user_id: i32, password: &str) -> Result<(), (StatusCode, String)> {
     // Start transaction

@@ -6,7 +6,7 @@ use axum_extra::extract::cookie::{CookieJar};
 use bcrypt::{ verify};
 use chrono::{DateTime, Utc};
 use sqlx::Database;
-use crate::models::user::{
+use crate::models::models::{
     LoginRequest, User
 };
 use crate::services::luma::LumaService;

@@ -10,7 +10,7 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::user::{
+use crate::models::models::{
     AuthResponse, Claims, CreateAdminRequest, CreateInvitationRequest,
     Invitation, InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,

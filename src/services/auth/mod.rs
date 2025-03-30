@@ -1,5 +1,5 @@
 use axum_extra::extract::CookieJar;
-use crate::models::user::LoginRequest;
+use crate::models::models::LoginRequest;
 use crate::services::luma::LumaService;
 
 pub mod utils;

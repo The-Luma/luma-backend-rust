@@ -104,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/users/{id}", get(get_user_by_id))
         .layer(from_fn_with_state(
             service.clone(),
-            crate::middleware::auth,
+            crate::middleware::auth::check_auth,
         ));
 
     // Admin-only routes
@@ -113,7 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/users/{id}", delete(admin_delete_user))
         .layer(from_fn_with_state(
             service.clone(),
-            crate::middleware::require_admin,
+            crate::middleware::auth::require_admin,
         ));
 
     // Combine them into the main router

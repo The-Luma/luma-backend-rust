@@ -1,16 +1,27 @@
-pub mod user;
 
-pub use user::{
+pub mod auth;
+pub mod users;
+
+pub mod utils;
+
+pub use utils::{
+    error_response,
+};
+
+pub use auth::{
+    check_admin_setup,
     create_admin,
-    refresh_token,
-    me,
     login,
+    refresh_token,
     logout,
     create_invitation,
     register_with_invitation,
-    delete_account,
-    admin_delete_user,
-    search_users,
+};
+
+pub use users::{
+    me,
     get_user_by_id,
-    check_admin_setup
-}; 
+    search_users,
+    delete_account,
+    admin_delete_user
+};

@@ -1,21 +1,12 @@
 use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
+    http::StatusCode
 };
-use axum_extra::extract::cookie::{Cookie, CookieJar};
-use bcrypt::{hash, verify, DEFAULT_COST};
-use chrono::{DateTime, Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use sqlx::PgPool;
-use uuid::Uuid;
 
-use crate::models::user::{
-    AuthResponse, Claims, CreateAdminRequest, CreateInvitationRequest,
-    Invitation, InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
-    User, UserResponse, SearchUsersQuery, SearchUsersResponse,
+
+use crate::models::models::{
+    UserResponse, SearchUsersQuery, SearchUsersResponse,
 };
-use crate::services::auth;
+
 use crate::services::luma::LumaService;
 
 pub async fn get_user_by_id(service: &LumaService, user_id: i32) -> Result<UserResponse, (StatusCode, String)> {
