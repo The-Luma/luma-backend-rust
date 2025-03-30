@@ -1,7 +1,7 @@
 use pinecone_sdk::pinecone::{PineconeClient, PineconeClientConfig};
 use pinecone_sdk::models::{IndexModel, Metric, Vector, Value, Kind, Metadata, QueryResponse};
-use std::env;
 use std::collections::BTreeMap;
+use crate::config::Config;
 
 #[derive(Debug, Clone)]
 pub struct PineconeIndexConfig {
@@ -17,19 +17,15 @@ pub struct PineconeService {
 }
 
 impl PineconeService {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        // Get API key from environment
-        let api_key = env::var("BACKEND_PINECONE_API_KEY")
-            .expect("BACKEND_PINECONE_API_KEY must be set in environment");
-
+    pub fn new(config: &Config) -> Result<Self, Box<dyn std::error::Error>> {
         // Create Pinecone configuration
-        let config = PineconeClientConfig {
-            api_key: Some(api_key),
+        let pinecone_config = PineconeClientConfig {
+            api_key: Some(config.pinecone_api_key.clone()),
             ..Default::default()
         };
 
         // Initialize Pinecone client
-        let client = config.client().expect("Failed to create Pinecone instance");
+        let client = pinecone_config.client().expect("Failed to create Pinecone instance");
 
         Ok(Self { 
             client,
@@ -37,16 +33,31 @@ impl PineconeService {
         })
     }
 
-    pub async fn check_connection(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn check_connection(&mut self, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
         // Try to list indexes to verify connection
-        self.client.list_indexes().await?;
-        Ok(())
-    }
-    pub async fn initialize_index(&mut self) -> Result<IndexModel, Box<dyn std::error::Error>> {
-        // Get the expected index name from environment
-        let expected_index_name = env::var("BACKEND_PINECONE_INDEX_NAME")
-            .expect("BACKEND_PINECONE_INDEX_NAME must be set in environment");
 
+        println!("-------------------------------------");
+        println!("Testing Pinecone connection...");
+        self.client.list_indexes().await?;
+        
+        // Initialize and verify index
+        match self.initialize_index(config).await {
+            Ok(_index) => {
+                if let Some(index_config) = self.get_index_config() {
+                    println!("Successfully connected to Pinecone index: {}", index_config.name);
+                    println!("Index dimension: {}", index_config.dimension);
+                    println!("Index metric: {:?}", index_config.metric);
+                }
+                Ok(())
+            }
+            Err(e) => {
+                eprintln!("Failed to initialize Pinecone index: {}", e);
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn initialize_index(&mut self, config: &Config) -> Result<IndexModel, Box<dyn std::error::Error>> {
         // List all indexes
         let index_list = self.client.list_indexes().await?;
         
@@ -60,13 +71,13 @@ impl PineconeService {
 
         // Find the index with matching name
         let target_index = indexes.iter()
-            .find(|index| index.name == expected_index_name)
+            .find(|index| index.name == config.pinecone_index_name)
             .ok_or_else(|| {
                 let available_indexes: Vec<String> = indexes.iter()
                     .map(|i| i.name.clone())
                     .collect();
                 format!("Pinecone index '{}' not found. Available indexes: {}", 
-                    expected_index_name,
+                    config.pinecone_index_name,
                     available_indexes.join(", ")
                 )
             })?;

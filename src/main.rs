@@ -2,8 +2,8 @@ mod handlers;
 mod models;
 mod services;
 mod middleware;
+mod config;
 
-use std::env;
 use axum::{
     http::{header, Method},
     middleware::from_fn_with_state,
@@ -16,55 +16,26 @@ use tower_http::cors::CorsLayer;
 use services::openai::OpenAIService;
 use services::pinecone::PineconeService;
 use crate::{
+    config::Config,
     handlers::{admin_delete_user, check_admin_setup, create_admin, create_invitation, delete_account, get_user_by_id, login, logout, me, refresh_token, register_with_invitation, search_users},
-    services::luma::LumaService,
+    services::{luma::LumaService, db::{init_db_pool, run_test_query}},
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load environment variables
-    dotenv().ok();
-    
-    // Get database URL and JWT secret from environment
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let jwt_secret = env::var("BACKEND_JWT_SECRET").expect("JWT_SECRET must be set");
-    let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
-    
-    // Initialize OpenAI
-    let openai_service = OpenAIService::new()?;
-    println!("Testing OpenAI connection...");
-    openai_service.check_connection().await?;
-    println!("Successfully connected to OpenAI");
-    
-    // Initialize Pinecone
-    let mut pinecone_service = PineconeService::new()?;
-    println!("Testing Pinecone connection...");
-    pinecone_service.check_connection().await?;
-    
-    // Get first available index
-    match pinecone_service.initialize_index().await {
-        Ok(_index) => {
-            if let Some(config) = pinecone_service.get_index_config() {
-                println!("Successfully connected to Pinecone index: {}", config.name);
-                println!("Index dimension: {}", config.dimension);
-                println!("Index metric: {:?}", config.metric);
-            }
-        }
-        Err(e) => {
-            println!("Error: {}", e);
-            println!("Server cannot start without a Pinecone index. Please create an index first.");
-            std::process::exit(1);
-        }
-    }
-    
-    // Create database connection pool
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .await?;
 
-    // Create user service
-    let service = LumaService::new(pool, jwt_secret);
+    let config = Config::from_env().expect("Failed to load configuration");
+
+    let openai_service = OpenAIService::new(&config)?;
+    openai_service.check_connection().await?;
+
+    let mut pinecone_service = PineconeService::new(&config)?;
+    pinecone_service.check_connection(&config).await?;
+
+    let pool = init_db_pool(&config).await?;
+    run_test_query(&pool).await?;
+
+    let service = LumaService::new(pool, config.jwt_secret);
 
     // Configure CORS
     let cors = CorsLayer::new()
@@ -84,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_origin([frontend_url.parse().unwrap()]);
+        .allow_origin([config.frontend_url.parse().unwrap()]);
 
     // Public routes (no auth required)
     let public_routes = Router::new()
@@ -126,7 +97,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Run it
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    println!(
+        r#"
+ _       __     __                             __           __
+| |     / /__  / /________  ____ ___  ___     / /_____     / /   __  ______ ___  ____ _
+| | /| / / _ \/ / ___/ __ \/ __ `__ \/ _ \   / __/ __ \   / /   / / / / __ `__ \/ __ `/
+| |/ |/ /  __/ / /__/ /_/ / / / / / /  __/  / /_/ /_/ /  / /___/ /_/ / / / / / / /_/ /
+|__/|__/\___/_/\___/\____/_/ /_/ /_/\___/   \__/\____/  /_____/\__,_/_/ /_/ /_/\__,_/
+        "#
+    );
+    println!("-------------------------------------");
     println!("Server running on http://0.0.0.0:3000");
+    println!("-------------------------------------");
     axum::serve(listener, app).await?;
 
     Ok(())

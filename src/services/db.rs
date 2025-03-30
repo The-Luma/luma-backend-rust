@@ -1,30 +1,27 @@
-use dotenvy::dotenv;
-use std::env;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use sqlx::Error;
+use crate::config::Config;
 
 /// Initializes and returns a PostgreSQL connection pool.
-pub async fn init_db_pool() -> Result<PgPool, Error> {
-    // Load environment variables from the .env file
-    dotenv().ok();
-
-    // Retrieve the database connection URL from the environment
-    let database_url = env::var("BACKEND_DB_CONNECTION")
-        .expect("BACKEND_DB_CONNECTION must be set in the .env file");
-
+pub async fn init_db_pool(config: &Config) -> Result<PgPool, Error> {
     // Create and return the connection pool
-    PgPoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&database_url)
-        .await
+        .connect(&config.backend_db_connection)
+        .await?;
+    
+    println!("Successfully connected to database");
+    Ok(pool)
 }
 
 pub async fn run_test_query(pool: &PgPool) -> Result<(), Error> {
+    println!("-------------------------------------");
+    println!("Testing PostgreSQL connection...");
     let row: (i64,) = sqlx::query_as("SELECT $1")
         .bind(150_i64)
         .fetch_one(pool)
         .await?;
 
-    println!("PostgreSQL Connectivity. Test query (SELECT $1) returned: {}", row.0);
+    println!("Successfully connected to PostgreSQL");
     Ok(())
 }
