@@ -10,8 +10,8 @@ use async_openai::{
         ChatCompletionRequestAssistantMessageArgs,
     }
 };
-use std::env;
 use std::error::Error;
+use crate::config::Config;
 
 pub struct OpenAIService {
     pub client: Client<OpenAIConfig>,
@@ -21,46 +21,32 @@ pub struct OpenAIService {
 }
 
 impl OpenAIService {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
-        // Get API key from environment
-        let api_key = env::var("BACKEND_OPENAI_API_KEY")
-            .expect("BACKEND_OPENAI_API_KEY must be set in environment");
-
-        // Get optional organization ID from environment
-        let org_id = env::var("BACKEND_OPENAI_ORG_ID").ok();
-
-        // Get model names from environment (required)
-        let completion_model = env::var("BACKEND_OPENAI_COMPLETION_MODEL")
-            .expect("BACKEND_OPENAI_COMPLETION_MODEL must be set in environment");
-        
-        let chat_model = env::var("BACKEND_OPENAI_CHAT_MODEL")
-            .expect("BACKEND_OPENAI_CHAT_MODEL must be set in environment");
-        
-        let embedding_model = env::var("BACKEND_OPENAI_EMBEDDING_MODEL")
-            .expect("BACKEND_OPENAI_EMBEDDING_MODEL must be set in environment");
-
+    pub fn new(config: &Config) -> Result<Self, Box<dyn Error>> {
         // Create OpenAI configuration
-        let mut config = OpenAIConfig::new()
-            .with_api_key(api_key);
+        let mut openai_config = OpenAIConfig::new()
+            .with_api_key(&config.openai_api_key);
 
         // Add organization ID if provided
-        if let Some(org) = org_id {
-            config = config.with_org_id(&org);
+        if !config.openai_org_id.is_empty() {
+            openai_config = openai_config.with_org_id(&config.openai_org_id);
         }
 
-        // Initialize OpenAI client
-        let client = Client::with_config(config);
+        // Create OpenAI client
+        let client = Client::with_config(openai_config);
 
-        Ok(Self { 
+        Ok(Self {
             client,
-            completion_model,
-            chat_model,
-            embedding_model,
+            completion_model: config.openai_completion_model.clone(),
+            chat_model: config.openai_chat_model.clone(),
+            embedding_model: config.openai_embedding_model.clone(),
         })
     }
 
     pub async fn check_connection(&self) -> Result<(), Box<dyn Error>> {
+        println!("-------------------------------------");
+        println!("Testing OpenAI connection...");
         self.client.models().list().await?;
+        println!("Successfully connected to OpenAI");
         Ok(())
     }
 
