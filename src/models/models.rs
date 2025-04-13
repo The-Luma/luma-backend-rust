@@ -236,6 +236,7 @@ pub struct Namespace {
     pub description: Option<String>,
     pub is_public: bool,
     pub created_at: DateTime<Utc>,
+    pub auth_level: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -247,4 +248,9 @@ pub struct NamespaceQuery {
 pub struct ShareNamespaceRequest {
     pub user_id: i32,
     pub auth_level: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RevokeNamespaceRequest {
+    pub user_id: i32,
 } 

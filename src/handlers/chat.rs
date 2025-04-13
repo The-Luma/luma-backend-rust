@@ -14,7 +14,8 @@ use crate::models::models::{
     CreateNamespaceRequest,
     Namespace,
     NamespaceQuery,
-    ShareNamespaceRequest
+    ShareNamespaceRequest,
+    RevokeNamespaceRequest
 };
 use chrono::{DateTime, Utc};
 use serde_json::json;
@@ -107,7 +108,7 @@ pub async fn list_namespaces(
     Extension(user): Extension<UserResponse>,
     Query(query): Query<NamespaceQuery>,
 ) -> impl IntoResponse {
-    match service.list_user_namespaces(user.id, query.include_public.unwrap_or(false)).await {
+    match service.list_user_namespaces(user.id).await {
         Ok(namespaces) => (StatusCode::OK, Json(json!({ "namespaces": namespaces }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
     }
@@ -120,7 +121,7 @@ pub async fn delete_namespace(
     Path(namespace_id): Path<i32>,
 ) -> impl IntoResponse {
     match service.delete_namespace(user.id, namespace_id).await {
-        Ok(_) => (StatusCode::NO_CONTENT, Json(json!({ "message": "Namespace deleted successfully" }))),
+        Ok(message) => (StatusCode::OK, Json(json!({ "message": message }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
     }
 }
@@ -139,6 +140,23 @@ pub async fn share_namespace(
         request.auth_level
     ).await {
         Ok(_) => (StatusCode::OK, Json(json!({ "message": "Namespace shared successfully" }))),
+        Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
+/// Revoke namespace access from a user
+pub async fn revoke_namespace_access(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+    Json(request): Json<RevokeNamespaceRequest>,
+) -> impl IntoResponse {
+    match service.revoke_namespace_access(
+        user.id,
+        namespace_id,
+        request.user_id,
+    ).await {
+        Ok(_) => (StatusCode::OK, Json(json!({ "message": "Namespace access revoked successfully" }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
     }
 }

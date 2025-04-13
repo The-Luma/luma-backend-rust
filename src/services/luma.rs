@@ -15,6 +15,7 @@ use crate::models::models::{
 use crate::services::auth;
 use crate::services::users;
 use crate::services::chats;
+use crate::services::chats::namespaces;
 
 pub struct AppConfig {
     pub access_token_duration: i64,
@@ -149,11 +150,11 @@ impl LumaService {
         chats::namespaces::create_namespace(&self.db, user_id, name, description, is_public).await
     }
 
-    pub async fn list_user_namespaces(&self, user_id: i32, include_public: bool) -> Result<Vec<Namespace>, (StatusCode, String)> {
-        chats::namespaces::list_user_namespaces(&self.db, user_id, include_public).await
+    pub async fn list_user_namespaces(&self, user_id: i32) -> Result<Vec<Namespace>, (StatusCode, String)> {
+        chats::namespaces::list_user_namespaces(&self.db, user_id).await
     }
 
-    pub async fn delete_namespace(&self, user_id: i32, namespace_id: i32) -> Result<(), (StatusCode, String)> {
+    pub async fn delete_namespace(&self, user_id: i32, namespace_id: i32) -> Result<String, (StatusCode, String)> {
         chats::namespaces::delete_namespace(&self.db, user_id, namespace_id).await
     }
 
@@ -165,5 +166,19 @@ impl LumaService {
         auth_level: i32,
     ) -> Result<(), (StatusCode, String)> {
         chats::namespaces::share_namespace(&self.db, owner_id, namespace_id, target_user_id, auth_level).await
+    }
+
+    pub async fn revoke_namespace_access(
+        &self,
+        owner_id: i32,
+        namespace_id: i32,
+        target_user_id: i32,
+    ) -> Result<(), (StatusCode, String)> {
+        namespaces::revoke_namespace_access(
+            &self.db,
+            owner_id,
+            namespace_id,
+            target_user_id,
+        ).await
     }
 }

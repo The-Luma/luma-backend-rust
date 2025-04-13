@@ -89,6 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/namespaces", get(list_namespaces))
         .route("/namespaces/{id}", delete(delete_namespace))
         .route("/namespaces/{id}/share", post(share_namespace))
+        .route("/namespaces/{id}/revoke", post(handlers::chat::revoke_namespace_access))
         .layer(from_fn_with_state(
             service.clone(),
             crate::middleware::auth::check_if_auth,

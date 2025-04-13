@@ -694,7 +694,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"{{password}}\",\n    \"invitation_token\": \"invitation-token\"\n}",
+							"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"{{password}}\",\n    \"invitation_token\": \"36fee252-2061-4671-ae7b-8d402011c117\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -721,7 +721,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"{{password}}\",\n    \"invitation_token\": \"invitation-token\"\n}",
+									"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"{{password}}\",\n    \"invitation_token\": \"36fee252-2061-4671-ae7b-8d402011c117\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -769,7 +769,7 @@
 					"request": {
 						"method": "POST",
 						"header": [],
-							"body": {
+						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"name\": \"My Namespace\",\n    \"description\": \"A namespace for my chats\",\n    \"is_public\": false\n}",
 							"options": {
@@ -872,18 +872,21 @@
 				},
 				{
 					"name": "/namespaces/{nameSpaceId}",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
 					"request": {
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/namespaces/1",
+							"raw": "{{base_url}}/api/namespaces/16",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"namespaces",
-								"1"
+								"16"
 							]
 						},
 						"description": "Delete a namespace. Requires authentication."
@@ -895,14 +898,14 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{base_url}}/api/namespaces/1",
+									"raw": "{{base_url}}/api/namespaces/16",
 									"host": [
 										"{{base_url}}"
 									],
 									"path": [
 										"api",
 										"namespaces",
-										"1"
+										"16"
 									]
 								},
 								"description": "Delete a namespace. Requires authentication."
@@ -923,6 +926,72 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
+							"raw": "{\n    \"user_id\": 2,\n    \"auth_level\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/namespaces/16/share",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces",
+								"16",
+								"share"
+							]
+						},
+						"description": "Share a namespace with another user. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"user_id\": 2,\n    \"auth_level\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/16/share",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"16",
+										"share"
+									]
+								},
+								"description": "Share a namespace with another user. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/namespaces/{nameSpaceId}/revoke",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
 							"raw": "{\n    \"user_id\": 2\n}",
 							"options": {
 								"raw": {
@@ -931,15 +1000,15 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/namespaces/1/share",
+							"raw": "{{base_url}}/api/namespaces/16/revoke",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"namespaces",
-								"1",
-								"share"
+								"16",
+								"revoke"
 							]
 						},
 						"description": "Share a namespace with another user. Requires authentication."
@@ -960,15 +1029,15 @@
 									}
 								},
 								"url": {
-									"raw": "{{base_url}}/api/namespaces/1/share",
+									"raw": "{{base_url}}/api/namespaces/16/revoke",
 									"host": [
 										"{{base_url}}"
 									],
 									"path": [
 										"api",
 										"namespaces",
-										"1",
-										"share"
+										"16",
+										"revoke"
 									]
 								},
 								"description": "Share a namespace with another user. Requires authentication."
@@ -995,7 +1064,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"namespace_id\": 1\n}",
+							"raw": "{\n    \"namespace_id\": 4\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1023,7 +1092,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"namespace_id\": 1\n}",
+									"raw": "{\n    \"namespace_id\": 4\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1122,14 +1191,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/chat/1",
+							"raw": "{{base_url}}/api/chat/3",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"chat",
-								"1"
+								"3"
 							]
 						},
 						"description": "Get chat history for a specific chat. Requires authentication."
@@ -1141,14 +1210,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{base_url}}/api/chat/1",
+									"raw": "{{base_url}}/api/chat/3",
 									"host": [
 										"{{base_url}}"
 									],
 									"path": [
 										"api",
 										"chat",
-										"1"
+										"3"
 									]
 								},
 								"description": "Get chat history for a specific chat. Requires authentication."
@@ -1254,6 +1323,28 @@
 				}
 			],
 			"description": "Chat related endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
 		}
 	],
 	"variable": [
