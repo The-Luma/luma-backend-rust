@@ -1128,7 +1128,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"chat_id\": 1,\n    \"message\": \"Hello, how can you help me?\"\n}",
+							"raw": "{\n    \"conversation_id\": 1,\n    \"content\": \"Hello, how can you help me?\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1156,7 +1156,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"chat_id\": 1,\n    \"message\": \"Hello, how can you help me?\"\n}",
+									"raw": "{\n    \"conversation_id\": 1,\n    \"content\": \"Hello, how can you help me?\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
