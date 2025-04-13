@@ -13,6 +13,7 @@ use async_openai::{
 use std::error::Error;
 use crate::config::Config;
 
+#[derive(Clone)]
 pub struct OpenAIService {
     pub client: Client<OpenAIConfig>,
     completion_model: String,

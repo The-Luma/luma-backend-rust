@@ -80,7 +80,7 @@ pub async fn delete_conversation(
     Path(conversation_id): Path<i32>,
 ) -> impl IntoResponse {
     match service.delete_conversation(user.id, conversation_id).await {
-        Ok(_) => (StatusCode::NO_CONTENT, Json(json!({ "message": "Conversation deleted successfully" }))),
+        Ok(_) => (StatusCode::OK, Json(json!({ "message": "Conversation deleted successfully" }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
     }
 }

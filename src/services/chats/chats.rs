@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc, NaiveDateTime};
-use crate::models::models::{ChatMessage, ChatResponse, Conversation};
+use crate::models::models::{ChatMessage, ChatResponse, Conversation, ConversationListItem};
 
 pub async fn start_chat_conversation(
     db: &PgPool,
@@ -212,7 +212,7 @@ pub async fn list_user_conversations(
     db: &PgPool,
     user_id: i32,
     include_public: bool,
-) -> Result<Vec<Conversation>, (StatusCode, String)> {
+) -> Result<Vec<ConversationListItem>, (StatusCode, String)> {
     let chats = sqlx::query!(
         r#"
         SELECT DISTINCT c.id, c.user_id, c.started_at, n.id as namespace_id
@@ -230,33 +230,15 @@ pub async fn list_user_conversations(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let mut conversations = Vec::new();
-
-    for chat in chats {
-        let messages = sqlx::query_as!(
-            ChatResponse,
-            r#"
-            SELECT id, content, sender_type, time_sent, chat_id as conversation_id
-            FROM message
-            WHERE chat_id = $1
-            ORDER BY time_sent ASC
-            "#,
-            chat.id
-        )
-        .fetch_all(db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        conversations.push(Conversation {
+    Ok(chats
+        .into_iter()
+        .map(|chat| ConversationListItem {
             id: chat.id,
             user_id: chat.user_id,
             namespace_id: chat.namespace_id,
             started_at: DateTime::from_naive_utc_and_offset(chat.started_at, Utc),
-            messages,
-        });
-    }
-
-    Ok(conversations)
+        })
+        .collect())
 }
 
 pub async fn delete_conversation(

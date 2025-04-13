@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = init_db_pool(&config).await?;
     run_test_query(&pool).await?;
 
-    let service = LumaService::new(pool, config.jwt_secret);
+    let service = LumaService::new(pool, config.jwt_secret, openai_service);
 
     // Configure CORS
     let cors = CorsLayer::new()

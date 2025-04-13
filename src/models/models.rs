@@ -220,6 +220,14 @@ pub struct Conversation {
     pub messages: Vec<ChatResponse>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct ConversationListItem {
+    pub id: i32,
+    pub user_id: i32,
+    pub namespace_id: i32,
+    pub started_at: DateTime<Utc>,
+}
+
 /// Namespace-related models
 #[derive(Debug, Deserialize)]
 pub struct CreateNamespaceRequest {
