@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "80661078-a55a-408c-88ee-c74d78c7f231",
+		"_postman_id": "ddae2bdc-3bcb-4eb5-942d-8cf9f6ae1fda",
 		"name": "Luma API",
 		"description": "API for the Luma application. All protected endpoints require an access token cookie.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -9,7 +9,6 @@
 	"item": [
 		{
 			"name": "auth",
-			"description": "Authentication related endpoints",
 			"item": [
 				{
 					"name": "/ (Health Check)",
@@ -17,11 +16,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api"]
+							"raw": "{{base_url}}/api",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api"
+							]
 						},
 						"description": "Health check endpoint that returns a simple message. No authentication required."
 					},
@@ -32,13 +33,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api"
+									"raw": ""
 								}
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "text",
 							"header": [],
+							"cookie": [],
 							"body": "Hello from Luma API!"
 						}
 					]
@@ -49,20 +51,44 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/admin/check",
-							"protocol": "http",
-							"host": ["localhost"],
+							"raw": "{{base_url}}:3000/api/admin/check",
+							"host": [
+								"{{base_url}}"
+							],
 							"port": "3000",
-							"path": ["api", "admin", "check"]
+							"path": [
+								"api",
+								"admin",
+								"check"
+							]
 						},
 						"description": "Check if admin setup is required (no admin exists in the system). Returns true if admin setup is needed. No authentication required."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}:3000/api/admin/check",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"admin",
+										"check"
+									]
+								},
+								"description": "Check if admin setup is required (no admin exists in the system). Returns true if admin setup is needed. No authentication required."
+							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
 							"body": "true"
 						}
 					]
@@ -74,7 +100,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"example\",\n    \"password\": \"your_password\"\n}",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -82,11 +108,14 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/login",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "login"]
+							"raw": "{{base_url}}/api/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"login"
+							]
 						},
 						"description": "Login endpoint that authenticates a user and returns access and refresh tokens in cookies. No authentication required."
 					},
@@ -99,6 +128,9 @@
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"username\": \"example\",\n    \"password\": \"password123\"\n}"
+								},
+								"url": {
+									"raw": ""
 								}
 							},
 							"status": "OK",
@@ -114,10 +146,8 @@
 									"value": "refresh_token=...; HttpOnly; Secure"
 								}
 							],
-							"body": {
-								"access_token": "...",
-								"token_type": "Bearer"
-							}
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -127,17 +157,35 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/refresh",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "refresh"]
+							"raw": "{{base_url}}/api/refresh",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"refresh"
+							]
 						},
 						"description": "Refresh endpoint that uses the refresh token cookie to generate new access and refresh tokens. Requires refresh_token cookie."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/refresh",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"refresh"
+									]
+								},
+								"description": "Refresh endpoint that uses the refresh token cookie to generate new access and refresh tokens. Requires refresh_token cookie."
+							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
@@ -151,10 +199,8 @@
 									"value": "refresh_token=...; HttpOnly; Secure"
 								}
 							],
-							"body": {
-								"access_token": "...",
-								"token_type": "Bearer"
-							}
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -164,26 +210,41 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/me",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "me"]
+							"raw": "{{base_url}}/api/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"me"
+							]
 						},
 						"description": "Get current user information. Requires authentication."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/me",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"me"
+									]
+								},
+								"description": "Get current user information. Requires authentication."
+							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
-							"body": {
-								"id": 1,
-								"username": "example",
-								"email": "example@example.com",
-								"role": "user"
-							}
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -194,7 +255,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"password\": \"your_password\"\n}",
+							"raw": "{\n    \"password\": \"{{password}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -202,19 +263,50 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/me",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "me"]
+							"raw": "{{base_url}}/api/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"me"
+							]
 						},
 						"description": "Delete current user's account. Requires authentication and current password."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"password\": \"{{password}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/me",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"me"
+									]
+								},
+								"description": "Delete current user's account. Requires authentication and current password."
+							},
 							"status": "No Content",
-							"code": 204
+							"code": 204,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -224,17 +316,35 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/logout",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "logout"]
+							"raw": "{{base_url}}/api/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logout"
+							]
 						},
 						"description": "Logout endpoint that invalidates the current session and clears authentication cookies. Requires authentication."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/logout",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"logout"
+									]
+								},
+								"description": "Logout endpoint that invalidates the current session and clears authentication cookies. Requires authentication."
+							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
@@ -248,27 +358,40 @@
 									"value": "refresh_token=; HttpOnly; Secure; Max-Age=0"
 								}
 							],
-							"body": {
-								"message": "Logged out successfully"
-							}
+							"cookie": [],
+							"body": ""
 						},
 						{
 							"name": "Unauthorized",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/logout",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"logout"
+									]
+								},
+								"description": "Logout endpoint that invalidates the current session and clears authentication cookies. Requires authentication."
+							},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
-							"body": {
-								"error": "Unauthorized",
-								"message": "No access token provided"
-							}
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				}
-			]
+			],
+			"description": "Authentication related endpoints"
 		},
 		{
 			"name": "users",
-			"description": "User management endpoints",
 			"item": [
 				{
 					"name": "/admin (Create First Admin)",
@@ -285,26 +408,50 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/admin",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "admin"]
+							"raw": "{{base_url}}/api/admin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin"
+							]
 						},
 						"description": "Create the first admin account. This endpoint can only be used once when there are no users in the system."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin_password\",\n    \"email\": \"admin@example.com\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/admin",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"admin"
+									]
+								},
+								"description": "Create the first admin account. This endpoint can only be used once when there are no users in the system."
+							},
 							"status": "Created",
 							"code": 201,
 							"_postman_previewlanguage": "json",
-							"body": {
-								"id": 1,
-								"username": "admin",
-								"email": "admin@example.com",
-								"role": "admin"
-							}
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -314,11 +461,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/users?search_string=john&limit=10&offset=0",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "users"],
+							"raw": "{{base_url}}/api/users?search_string=john&limit=10&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users"
+							],
 							"query": [
 								{
 									"key": "search_string",
@@ -342,22 +492,44 @@
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/users?search_string=john&limit=10&offset=0",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users"
+									],
+									"query": [
+										{
+											"key": "search_string",
+											"value": "john",
+											"description": "Optional search string to filter users"
+										},
+										{
+											"key": "limit",
+											"value": "10",
+											"description": "Maximum number of results (default: 50, max: 100)"
+										},
+										{
+											"key": "offset",
+											"value": "0",
+											"description": "Number of results to skip for pagination"
+										}
+									]
+								},
+								"description": "Search users by email or username. Supports pagination. Requires authentication."
+							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
-							"body": {
-								"users": [
-									{
-										"id": 1,
-										"username": "john_doe",
-										"email": "john@example.com",
-										"role": "user"
-									}
-								],
-								"total": 1,
-								"limit": 10,
-								"offset": 0
-							}
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -367,26 +539,43 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/users/1",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "users", "1"]
+							"raw": "{{base_url}}/api/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
 						},
 						"description": "Get a specific user by their ID. Requires authentication."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/users/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users",
+										"1"
+									]
+								},
+								"description": "Get a specific user by their ID. Requires authentication."
+							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
-							"body": {
-								"id": 1,
-								"username": "example",
-								"email": "example@example.com",
-								"role": "user"
-							}
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -396,19 +585,43 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/users/1",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "users", "1"]
+							"raw": "{{base_url}}/api/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
 						},
 						"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/users/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"users",
+										"1"
+									]
+								},
+								"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
+							},
 							"status": "No Content",
-							"code": 204
+							"code": 204,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -427,31 +640,50 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/invitations",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "invitations"]
+							"raw": "{{base_url}}/api/invitations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invitations"
+							]
 						},
 						"description": "Create an invitation for a new user. Requires admin role."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"new@example.com\",\n    \"role\": \"user\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/invitations",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"invitations"
+									]
+								},
+								"description": "Create an invitation for a new user. Requires admin role."
+							},
 							"status": "Created",
 							"code": 201,
 							"_postman_previewlanguage": "json",
-							"body": {
-								"id": "uuid",
-								"email": "new@example.com",
-								"role": "user",
-								"token": "invitation-token",
-								"invited_by": 1,
-								"expires_at": "2024-03-20T00:00:00Z",
-								"created_at": "2024-03-13T00:00:00Z",
-								"used_at": null,
-								"invitation_link": "http://localhost:5173/register?token=invitation-token"
-							}
+							"header": [],
+							"cookie": [],
+							"body": ""
 						}
 					]
 				},
@@ -462,7 +694,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"password123\",\n    \"invitation_token\": \"invitation-token\"\n}",
+							"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"{{password}}\",\n    \"invitation_token\": \"invitation-token\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -470,17 +702,44 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/register",
-							"protocol": "http",
-							"host": ["localhost"],
-							"port": "3000",
-							"path": ["api", "register"]
+							"raw": "{{base_url}}/api/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"register"
+							]
 						},
 						"description": "Register a new user with an invitation token. No authentication required."
 					},
 					"response": [
 						{
 							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"new_user\",\n    \"password\": \"{{password}}\",\n    \"invitation_token\": \"invitation-token\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/register",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"register"
+									]
+								},
+								"description": "Register a new user with an invitation token. No authentication required."
+							},
 							"status": "Created",
 							"code": 201,
 							"_postman_previewlanguage": "json",
@@ -494,14 +753,524 @@
 									"value": "refresh_token=...; HttpOnly; Secure"
 								}
 							],
-							"body": {
-								"access_token": "...",
-								"token_type": "Bearer"
-							}
+							"cookie": [],
+							"body": ""
 						}
 					]
 				}
-			]
+			],
+			"description": "User management endpoints"
+		},
+		{
+			"name": "namespaces",
+			"item": [
+				{
+					"name": "/namespaces",
+					"request": {
+						"method": "POST",
+						"header": [],
+							"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"My Namespace\",\n    \"description\": \"A namespace for my chats\",\n    \"is_public\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/namespaces",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces"
+							]
+						},
+						"description": "Create a new namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"My Namespace\",\n    \"description\": \"A namespace for my chats\",\n    \"is_public\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/namespaces",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces"
+									]
+								},
+								"description": "Create a new namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/namespaces",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/namespaces",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces"
+							]
+						},
+						"description": "List all namespaces. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces"
+									]
+								},
+								"description": "List all namespaces. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/namespaces/{nameSpaceId}",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/namespaces/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces",
+								"1"
+							]
+						},
+						"description": "Delete a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"1"
+									]
+								},
+								"description": "Delete a namespace. Requires authentication."
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/namespaces/{nameSpaceId}/share",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/namespaces/1/share",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces",
+								"1",
+								"share"
+							]
+						},
+						"description": "Share a namespace with another user. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"user_id\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/1/share",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"1",
+										"share"
+									]
+								},
+								"description": "Share a namespace with another user. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			],
+			"description": "Namespace related endpoints"
+		},
+		{
+			"name": "chat",
+			"item": [
+				{
+					"name": "/chat/start",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"namespace_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/start",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"start"
+							]
+						},
+						"description": "Start a new chat conversation in a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"namespace_id\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/chat/start",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"chat",
+										"start"
+									]
+								},
+								"description": "Start a new chat conversation in a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/chat/message",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"chat_id\": 1,\n    \"message\": \"Hello, how can you help me?\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"message"
+							]
+						},
+						"description": "Send a message in a chat conversation. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"chat_id\": 1,\n    \"message\": \"Hello, how can you help me?\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/chat/message",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"chat",
+										"message"
+									]
+								},
+								"description": "Send a message in a chat conversation. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/chat/{chatId}",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/chat/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"1"
+							]
+						},
+						"description": "Get chat history for a specific chat. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/chat/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"chat",
+										"1"
+									]
+								},
+								"description": "Get chat history for a specific chat. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/chat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/chat",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat"
+							]
+						},
+						"description": "List all chat conversations. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/chat",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"chat"
+									]
+								},
+								"description": "List all chat conversations. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/chat/{chatId}",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/chat/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"1"
+							]
+						},
+						"description": "Delete a chat conversation. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/chat/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"chat",
+										"1"
+									]
+								},
+								"description": "Delete a chat conversation. Requires authentication."
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			],
+			"description": "Chat related endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "example",
+			"type": "string"
+		},
+		{
+			"key": "password",
+			"value": "your_password",
+			"type": "string"
 		}
 	]
 }

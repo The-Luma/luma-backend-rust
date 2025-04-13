@@ -17,13 +17,18 @@ use services::openai::OpenAIService;
 use services::pinecone::PineconeService;
 use crate::{
     config::Config,
-    handlers::{admin_delete_user, check_admin_setup, create_admin, create_invitation, delete_account, get_user_by_id, login, logout, me, refresh_token, register_with_invitation, search_users},
+    handlers::{
+        admin_delete_user, check_admin_setup, create_admin, create_invitation,
+        delete_account, get_user_by_id, login, logout, me, refresh_token,
+        register_with_invitation, search_users, start_chat, send_message,
+        get_chat_history, list_conversations, delete_conversation,
+        create_namespace, list_namespaces, delete_namespace, share_namespace
+    },
     services::{luma::LumaService, db::{init_db_pool, run_test_query}},
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     let config = Config::from_env().expect("Failed to load configuration");
 
     let openai_service = OpenAIService::new(&config)?;
@@ -73,6 +78,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/logout", post(logout))
         .route("/users", get(search_users))
         .route("/users/{id}", get(get_user_by_id))
+        // Chat routes
+        .route("/chat/start", post(start_chat))
+        .route("/chat/message", post(send_message))
+        .route("/chat/{id}", get(get_chat_history))
+        .route("/chat", get(list_conversations))
+        .route("/chat/{id}", delete(delete_conversation))
+        // Namespace routes
+        .route("/namespaces", post(create_namespace))
+        .route("/namespaces", get(list_namespaces))
+        .route("/namespaces/{id}", delete(delete_namespace))
+        .route("/namespaces/{id}/share", post(share_namespace))
         .layer(from_fn_with_state(
             service.clone(),
             crate::middleware::auth::check_if_auth,

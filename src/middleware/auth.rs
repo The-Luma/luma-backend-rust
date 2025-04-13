@@ -14,7 +14,7 @@ use crate::services::luma::LumaService;
 pub async fn check_if_auth(
     State(service): State<LumaService>,
     jar: CookieJar,
-    request: Request<Body>,
+    mut request: Request<Body>,
     next: Next,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Get access token from cookie
@@ -30,8 +30,8 @@ pub async fn check_if_auth(
         .value()
         .to_string();
 
-    // Validate token
-    let _claims = service.validate_token(&access_token)
+    // Validate token and get claims
+    let claims = service.validate_token(&access_token)
         .map_err(|(_status, msg)| {
             let body = json!({
                 "error": "Unauthorized",
@@ -40,6 +40,20 @@ pub async fn check_if_auth(
             (StatusCode::UNAUTHORIZED, Json(body))
         })?;
 
+    // Get user information
+    let user = service.get_user_by_id(claims.sub)
+        .await
+        .map_err(|(_status, msg)| {
+            let body = json!({
+                "error": "Unauthorized",
+                "message": msg
+            });
+            (StatusCode::UNAUTHORIZED, Json(body))
+        })?;
+
+    // Insert user into request extensions
+    request.extensions_mut().insert(user);
+
     // Continue with the request
     Ok(next.run(request).await)
 }
@@ -47,7 +61,7 @@ pub async fn check_if_auth(
 pub async fn check_if_admin(
     State(service): State<LumaService>,
     jar: CookieJar,
-    request: Request<Body>,
+    mut request: Request<Body>,
     next: Next,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // Get access token from cookie
@@ -81,6 +95,20 @@ pub async fn check_if_admin(
         });
         return Err((StatusCode::FORBIDDEN, Json(body)));
     }
+
+    // Get user information
+    let user = service.get_user_by_id(claims.sub)
+        .await
+        .map_err(|(_status, msg)| {
+            let body = json!({
+                "error": "Unauthorized",
+                "message": msg
+            });
+            (StatusCode::UNAUTHORIZED, Json(body))
+        })?;
+
+    // Insert user into request extensions
+    request.extensions_mut().insert(user);
 
     // Continue with the request
     Ok(next.run(request).await)

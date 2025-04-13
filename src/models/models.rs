@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::{Validate, ValidationError};
@@ -67,7 +67,7 @@ pub struct CreateAdminRequest {
 
 /// Safe user data for responses
 /// Excludes sensitive information like password
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct UserResponse {
     pub id: i32,          // Maps to PostgreSQL SERIAL type
     pub username: String,
@@ -161,7 +161,7 @@ pub struct DeleteAccountRequest {
     pub password: String,
 }
 
-/// Query parameters for searching users
+/// Request payload for searching users
 #[derive(Debug, Deserialize)]
 pub struct SearchUsersQuery {
     pub search_string: Option<String>,
@@ -186,4 +186,65 @@ pub struct SearchUsersResponse {
     pub total: i64,
     pub limit: i64,
     pub offset: i64,
+}
+
+/// Chat-related models
+
+#[derive(Debug, Deserialize)]
+pub struct ChatStart {
+    pub conversation_id: Option<i32>,
+    pub namespace_id: Option<i32>,
+}
+#[derive(Debug, Deserialize)]
+pub struct ChatMessage {
+    pub content: String,
+    pub conversation_id: Option<i32>,
+    pub namespace_id: Option<i32>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct ChatResponse {
+    pub id: i32,
+    pub content: String,
+    pub sender_type: String,
+    pub time_sent: NaiveDateTime,
+    pub conversation_id: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Conversation {
+    pub id: i32,
+    pub user_id: i32,
+    pub namespace_id: i32,
+    pub started_at: DateTime<Utc>,
+    pub messages: Vec<ChatResponse>,
+}
+
+/// Namespace-related models
+#[derive(Debug, Deserialize)]
+pub struct CreateNamespaceRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub is_public: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Namespace {
+    pub id: i32,
+    pub user_id: i32,
+    pub name: String,
+    pub description: Option<String>,
+    pub is_public: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NamespaceQuery {
+    pub include_public: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShareNamespaceRequest {
+    pub user_id: i32,
+    pub auth_level: i32,
 } 

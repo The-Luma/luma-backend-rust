@@ -9,9 +9,12 @@ use crate::models::models::{
     Claims, CreateAdminRequest, CreateInvitationRequest,
     InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
+    ChatMessage, ChatResponse, Conversation,
+    CreateNamespaceRequest, Namespace, NamespaceQuery, ShareNamespaceRequest
 };
 use crate::services::auth;
 use crate::services::users;
+use crate::services::chats;
 
 pub struct AppConfig {
     pub access_token_duration: i64,
@@ -24,7 +27,6 @@ const ACCESS_TOKEN_DURATION: i64 = 15 * 60; // 15 minutes in seconds
 const REFRESH_TOKEN_DURATION: i64 = 7 * 24 * 60 * 60; // 7 days in seconds
 const INVITATION_DURATION: i64 = 7 * 24 * 60 * 60; // 7 days in seconds
 const FRONTEND_URL: &str = "http://localhost:5173"; // Frontend URL for invitation links
-
 
 #[derive(Clone)]
 pub struct LumaService {
@@ -93,7 +95,6 @@ impl LumaService {
     }
 
     // USER METHODS
-
     pub async fn get_user_by_id(&self, user_id: i32) -> Result<UserResponse, (StatusCode, String)> {
         users::retrieve::get_user_by_id(&self, user_id).await
     }
@@ -110,4 +111,59 @@ impl LumaService {
         users::delete::admin_delete_user(&self, target_user_id).await
     }
 
+    // CHAT METHODS
+    pub async fn start_chat_conversation(&self, user_id: i32, namespace_id: Option<i32>) -> Result<Conversation, (StatusCode, String)> {
+        chats::chats::start_chat_conversation(&self.db, user_id, namespace_id).await
+    }
+
+    pub async fn send_chat_message(
+        &self,
+        user_id: i32,
+        content: String,
+        conversation_id: Option<i32>,
+        namespace_id: Option<i32>,
+    ) -> Result<ChatResponse, (StatusCode, String)> {
+        chats::chats::send_chat_message(&self.db, user_id, content, conversation_id, namespace_id).await
+    }
+
+    pub async fn get_chat_history(&self, user_id: i32, conversation_id: i32) -> Result<Conversation, (StatusCode, String)> {
+        chats::chats::get_chat_history(&self.db, user_id, conversation_id).await
+    }
+
+    pub async fn list_user_conversations(&self, user_id: i32, include_public: bool) -> Result<Vec<Conversation>, (StatusCode, String)> {
+        chats::chats::list_user_conversations(&self.db, user_id, include_public).await
+    }
+
+    pub async fn delete_conversation(&self, user_id: i32, conversation_id: i32) -> Result<(), (StatusCode, String)> {
+        chats::chats::delete_conversation(&self.db, user_id, conversation_id).await
+    }
+
+    // NAMESPACE METHODS
+    pub async fn create_namespace(
+        &self,
+        user_id: i32,
+        name: String,
+        description: Option<String>,
+        is_public: bool,
+    ) -> Result<Namespace, (StatusCode, String)> {
+        chats::namespaces::create_namespace(&self.db, user_id, name, description, is_public).await
+    }
+
+    pub async fn list_user_namespaces(&self, user_id: i32, include_public: bool) -> Result<Vec<Namespace>, (StatusCode, String)> {
+        chats::namespaces::list_user_namespaces(&self.db, user_id, include_public).await
+    }
+
+    pub async fn delete_namespace(&self, user_id: i32, namespace_id: i32) -> Result<(), (StatusCode, String)> {
+        chats::namespaces::delete_namespace(&self.db, user_id, namespace_id).await
+    }
+
+    pub async fn share_namespace(
+        &self,
+        owner_id: i32,
+        namespace_id: i32,
+        target_user_id: i32,
+        auth_level: i32,
+    ) -> Result<(), (StatusCode, String)> {
+        chats::namespaces::share_namespace(&self.db, owner_id, namespace_id, target_user_id, auth_level).await
+    }
 }
