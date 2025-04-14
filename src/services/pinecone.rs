@@ -11,6 +11,7 @@ pub struct PineconeIndexConfig {
     pub host: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct PineconeService {
     pub client: PineconeClient,
     pub index_config: Option<PineconeIndexConfig>,

@@ -10,13 +10,16 @@ use crate::models::models::{
     InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
     ChatMessage, ChatResponse, Conversation, ConversationListItem,
-    CreateNamespaceRequest, Namespace, NamespaceQuery, ShareNamespaceRequest
+    CreateNamespaceRequest, Namespace, NamespaceQuery, ShareNamespaceRequest,
+    DocumentResponse
 };
 use crate::services::auth;
 use crate::services::users;
 use crate::services::chats;
 use crate::services::chats::namespaces;
+use crate::services::documents::documents;
 use crate::services::openai::OpenAIService;
+use crate::services::pinecone::PineconeService;
 
 pub struct AppConfig {
     pub access_token_duration: i64,
@@ -35,14 +38,16 @@ pub struct LumaService {
     db: PgPool,
     jwt_secret: String,
     openai: OpenAIService,
+    pinecone: PineconeService,
 }
 
 impl LumaService {
-    pub fn new(db: PgPool, jwt_secret: String, openai: OpenAIService) -> Self {
+    pub fn new(db: PgPool, jwt_secret: String, openai: OpenAIService, pinecone: PineconeService) -> Self {
         Self { 
             db, 
             jwt_secret, 
-            openai
+            openai,
+            pinecone
         }
     }
     pub fn db(&self) -> &PgPool {
@@ -291,6 +296,40 @@ impl LumaService {
             owner_id,
             namespace_id,
             target_user_id,
+        ).await
+    }
+
+    // DOCUMENT METHODS
+    pub async fn upload_document(
+        &self,
+        user_id: i32,
+        namespace_id: i32,
+        file_name: String,
+        file_content: Vec<u8>,
+    ) -> Result<DocumentResponse, (StatusCode, String)> {
+        documents::upload_document(
+            &self.db,
+            user_id,
+            namespace_id,
+            file_name,
+            file_content,
+            &self.pinecone,
+            &self.openai,
+        ).await
+    }
+
+    pub async fn delete_document(
+        &self,
+        user_id: i32,
+        namespace_id: i32,
+        document_id: i32,
+    ) -> Result<String, (StatusCode, String)> {
+        documents::delete_document(
+            &self.db,
+            user_id,
+            namespace_id,
+            document_id,
+            &self.pinecone,
         ).await
     }
 }

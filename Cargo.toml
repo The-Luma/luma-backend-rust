@@ -9,7 +9,7 @@ edition = "2021"
 load_dotenv = true
 
 [dependencies]
-axum = { version = "0.8.1", features = ["http2"] }
+axum = { version = "0.8.1", features = ["http2", "multipart"] }
 axum-extra = { version = "0.10.0", features = ["cookie"] }
 tower-http = { version = "0.6.0", features = ["cors"] }
 tokio = { version = "1.44.0", features = ["rt-multi-thread"] }
@@ -25,3 +25,4 @@ uuid = { version = "1.7.0", features = ["v4", "serde"] }
 time = "0.3.34"
 pinecone-sdk = "0.1.2"
 async-openai = "0.28.0"
+futures = "0.3.30"

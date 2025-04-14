@@ -1323,6 +1323,128 @@
 				}
 			],
 			"description": "Chat related endpoints"
+		},
+		{
+			"name": "documents",
+			"item": [
+				{
+					"name": "/documents/upload/{namespace_id}",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/documents/upload/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"upload",
+								"1"
+							]
+						},
+						"description": "Upload a document to a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/api/documents/upload/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"upload",
+										"1"
+									]
+								},
+								"description": "Upload a document to a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"document\": {\n        \"id\": 1,\n        \"name\": \"example.pdf\",\n        \"created_at\": \"2023-04-13T12:00:00Z\",\n        \"namespace_id\": 1\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "/documents/{namespace_id}/{document_id}",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/documents/1/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"1",
+								"1"
+							]
+						},
+						"description": "Delete a document from a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1",
+										"1"
+									]
+								},
+								"description": "Delete a document from a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"message\": \"Document deleted successfully\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Document related endpoints"
 		}
 	],
 	"event": [

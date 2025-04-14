@@ -1,5 +1,6 @@
 use axum::{
-    extract::{Path, State, Query, Extension},
+    extract::{Path, State, Query, Extension, Multipart},
+    extract::multipart::Field,
     Json,
     response::IntoResponse,
     http::StatusCode,
@@ -15,10 +16,13 @@ use crate::models::models::{
     Namespace,
     NamespaceQuery,
     ShareNamespaceRequest,
-    RevokeNamespaceRequest
+    RevokeNamespaceRequest,
+    UploadDocumentRequest,
+    DocumentResponse
 };
 use chrono::{DateTime, Utc};
 use serde_json::json;
+use futures::StreamExt;
 
 /// Start a new chat conversation
 pub async fn start_chat(
@@ -157,6 +161,65 @@ pub async fn revoke_namespace_access(
         request.user_id,
     ).await {
         Ok(_) => (StatusCode::OK, Json(json!({ "message": "Namespace access revoked successfully" }))),
+        Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
+/// Upload a document to a namespace
+pub async fn upload_document(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+    mut multipart: Multipart,
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    let mut file_name: Option<String> = None;
+    let mut file_content: Option<Vec<u8>> = None;
+
+    // Process multipart form data
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": format!("Failed to process form data: {}", e) })))
+    })? {
+        let name = field.name().unwrap_or("").to_string();
+        
+        match name.as_str() {
+            "file" => {
+                file_name = Some(field.file_name().unwrap_or("unnamed.pdf").to_string());
+                file_content = Some(field.bytes().await.map_err(|e| {
+                    (StatusCode::BAD_REQUEST, Json(json!({ "error": format!("Failed to read file: {}", e) })))
+                })?.to_vec());
+            },
+            _ => {}
+        }
+    }
+    
+    let file_name = file_name.ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": "file is required" })))
+    })?;
+    
+    let file_content = file_content.ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": "file content is required" })))
+    })?;
+
+    // Upload document
+    match service.upload_document(
+        user.id,
+        namespace_id,
+        file_name,
+        file_content,
+    ).await {
+        Ok(document) => Ok((StatusCode::OK, Json(json!({ "document": document })))),
+        Err((status, message)) => Err((status, Json(json!({ "error": message })))),
+    }
+}
+
+/// Delete a document from a namespace
+pub async fn delete_document(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path((namespace_id, document_id)): Path<(i32, i32)>,
+) -> impl IntoResponse {
+    match service.delete_document(user.id, namespace_id, document_id).await {
+        Ok(message) => (StatusCode::OK, Json(json!({ "message": message }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
     }
 }
