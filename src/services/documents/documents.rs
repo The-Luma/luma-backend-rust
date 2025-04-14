@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc, NaiveDateTime};
 use crate::models::models::{Document, NamespaceDocument, DocumentResponse};
 use crate::services::pinecone::PineconeService;
 use crate::services::openai::OpenAIService;
+use crate::services::files::FileService;
 
 /// Upload a document to a namespace
 /// 
@@ -23,6 +24,18 @@ pub async fn upload_document(
 ) -> Result<DocumentResponse, (StatusCode, String)> {
     println!("Uploading document: user_id={}, namespace_id={}, file_name={}, file_size={} bytes", 
              user_id, namespace_id, file_name, file_content.len());
+    
+    // Save file and extract text using FileService
+    let (storage_name, extracted_text) = FileService::save_and_process_file(
+        namespace_id,
+        file_name.clone(),
+        file_content,
+        false,
+    )?;
+    
+    // TODO: Save document metadata to database
+    // TODO: Process extracted text with OpenAI
+    // TODO: Store embeddings in Pinecone
     
     // Return a mock document response
     Ok(DocumentResponse {
@@ -49,6 +62,15 @@ pub async fn delete_document(
 ) -> Result<String, (StatusCode, String)> {
     println!("Deleting document: user_id={}, namespace_id={}, document_id={}", 
              user_id, namespace_id, document_id);
+    
+    // TODO: Get the storage_name from the database
+    let storage_name = "temp.pdf"; // This should come from the database
+    
+    // Delete the file using FileService
+    FileService::delete_file(namespace_id, storage_name)?;
+    
+    // TODO: Delete document from database
+    // TODO: Delete from vector database
     
     Ok("Document deleted successfully".to_string())
 } 

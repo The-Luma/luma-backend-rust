@@ -6,3 +6,4 @@ pub mod luma;
 pub mod openai;
 pub mod pinecone;
 pub mod db;
+pub mod files;
