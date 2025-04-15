@@ -257,13 +257,7 @@ impl LumaService {
     }
 
     // NAMESPACE METHODS
-    pub async fn create_namespace(
-        &self,
-        user_id: i32,
-        name: String,
-        description: Option<String>,
-        is_public: bool,
-    ) -> Result<Namespace, (StatusCode, String)> {
+    pub async fn create_namespace(&self, user_id: i32, name: String, description: Option<String>, is_public: bool,) -> Result<Namespace, (StatusCode, String)> {
         chats::namespaces::create_namespace(&self.db, user_id, name, description, is_public).await
     }
 
@@ -275,73 +269,24 @@ impl LumaService {
         chats::namespaces::delete_namespace(&self.db, user_id, namespace_id).await
     }
 
-    pub async fn share_namespace(
-        &self,
-        owner_id: i32,
-        namespace_id: i32,
-        target_user_id: i32,
-        auth_level: i32,
-    ) -> Result<(), (StatusCode, String)> {
+    pub async fn share_namespace(&self, owner_id: i32, namespace_id: i32, target_user_id: i32, auth_level: i32,) -> Result<(), (StatusCode, String)> {
         chats::namespaces::share_namespace(&self.db, owner_id, namespace_id, target_user_id, auth_level).await
     }
 
-    pub async fn revoke_namespace_access(
-        &self,
-        owner_id: i32,
-        namespace_id: i32,
-        target_user_id: i32,
-    ) -> Result<(), (StatusCode, String)> {
-        namespaces::revoke_namespace_access(
-            &self.db,
-            owner_id,
-            namespace_id,
-            target_user_id,
-        ).await
+    pub async fn revoke_namespace_access(&self, owner_id: i32, namespace_id: i32, target_user_id: i32,) -> Result<(), (StatusCode, String)> {
+        namespaces::revoke_namespace_access(&self.db,owner_id, namespace_id, target_user_id,).await
     }
 
     // DOCUMENT METHODS
-    pub async fn upload_document(
-        &self,
-        user_id: i32,
-        namespace_id: i32,
-        file_name: String,
-        file_content: Vec<u8>,
-    ) -> Result<DocumentResponse, (StatusCode, String)> {
-        documents::upload_document(
-            &self.db,
-            user_id,
-            namespace_id,
-            file_name,
-            file_content,
-            &self.pinecone,
-            &self.openai,
-        ).await
+    pub async fn upload_document(&self, user_id: i32, namespace_id: i32, file_name: String,file_content: Vec<u8>,) -> Result<DocumentResponse, (StatusCode, String)> {
+        documents::upload_document(&self.db, user_id, namespace_id, file_name, file_content, &self.pinecone, &self.openai,).await
     }
 
-    pub async fn delete_document(
-        &self,
-        user_id: i32,
-        namespace_id: i32,
-        document_id: i32,
-    ) -> Result<String, (StatusCode, String)> {
-        documents::delete_document(
-            &self.db,
-            user_id,
-            namespace_id,
-            document_id,
-            &self.pinecone,
-        ).await
+    pub async fn delete_document(&self, user_id: i32, namespace_id: i32, document_id: i32,) -> Result<String, (StatusCode, String)> {
+        documents::delete_document(&self.db, user_id, namespace_id, document_id, &self.pinecone,).await
     }
 
-    pub async fn list_documents(
-        &self,
-        user_id: i32,
-        namespace_id: i32,
-    ) -> Result<Vec<DocumentListItem>, (StatusCode, String)> {
-        documents::list_documents(
-            &self.db,
-            user_id,
-            namespace_id,
-        ).await
+    pub async fn list_documents(&self, user_id: i32, namespace_id: i32,) -> Result<Vec<DocumentListItem>, (StatusCode, String)> {
+        documents::list_documents( &self.db, user_id, namespace_id,).await
     }
 }
