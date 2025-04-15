@@ -1,6 +1,5 @@
 use axum::{
     extract::{Path, State, Query, Extension, Multipart},
-    extract::multipart::Field,
     Json,
     response::IntoResponse,
     http::StatusCode,
@@ -11,19 +10,12 @@ use crate::models::models::{
     UserResponse,
     ChatMessage,
     ChatStart,
-    ChatResponse,
-    Conversation,
     CreateNamespaceRequest,
-    Namespace,
     NamespaceQuery,
     ShareNamespaceRequest,
     RevokeNamespaceRequest,
-    UploadDocumentRequest,
-    DocumentResponse
 };
-use chrono::{DateTime, Utc};
 use serde_json::json;
-use futures::StreamExt;
 
 /// Start a new chat conversation
 pub async fn start_chat(
@@ -46,8 +38,7 @@ pub async fn send_message(
     match service.send_chat_message(
         user.id,
         message.content,
-        message.conversation_id,
-        message.namespace_id
+        message.conversation_id
     ).await {
         Ok(message) => (StatusCode::OK, Json(json!({ "message": message }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
@@ -111,7 +102,7 @@ pub async fn create_namespace(
 pub async fn list_namespaces(
     State(service): State<LumaService>,
     Extension(user): Extension<UserResponse>,
-    Query(query): Query<NamespaceQuery>,
+    Query(_query): Query<NamespaceQuery>,
 ) -> impl IntoResponse {
     match service.list_user_namespaces(user.id).await {
         Ok(namespaces) => (StatusCode::OK, Json(json!({ "namespaces": namespaces }))),

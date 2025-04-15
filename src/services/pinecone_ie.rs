@@ -88,7 +88,6 @@ impl PineconeIEService {
     pub async fn search(
         &self,
         namespace_id: &str,
-        query: Vec<f32>,
         top_k: i32,
         query_text: Option<String>,
     ) -> Result<SearchResponse, Box<dyn Error>> {

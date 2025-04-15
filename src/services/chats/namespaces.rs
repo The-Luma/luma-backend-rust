@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use axum::http::StatusCode;
-use chrono::{DateTime, Utc, NaiveDateTime};
-use crate::models::models::{CreateNamespaceRequest, Namespace};
+use chrono::{DateTime, Utc};
+use crate::models::models::{Namespace};
 
 pub async fn create_namespace(
     db: &PgPool,
@@ -214,7 +214,7 @@ pub async fn share_namespace(
     .ok_or_else(|| (StatusCode::NOT_FOUND, "Namespace not found or you do not have a permission".to_string()))?;
 
     // Verify target user exists
-    let user = sqlx::query!(
+    sqlx::query!(
         r#"
         SELECT id
         FROM users
@@ -311,7 +311,7 @@ pub async fn revoke_namespace_access(
     .ok_or_else(|| (StatusCode::NOT_FOUND, "Namespace not found or you do not have a permission".to_string()))?;
 
     // Verify target user exists
-    let user = sqlx::query!(
+    sqlx::query!(
         r#"
         SELECT id
         FROM users
