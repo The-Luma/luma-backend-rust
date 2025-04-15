@@ -20,6 +20,7 @@ use crate::services::chats::namespaces;
 use crate::services::documents::documents;
 use crate::services::openai::OpenAIService;
 use crate::services::pinecone::PineconeService;
+use crate::services::pinecone_ie::PineconeIEService;
 
 pub struct AppConfig {
     pub access_token_duration: i64,
@@ -39,20 +40,32 @@ pub struct LumaService {
     jwt_secret: String,
     openai: OpenAIService,
     pinecone: PineconeService,
+    pinecone_ie: PineconeIEService,
 }
 
 impl LumaService {
-    pub fn new(db: PgPool, jwt_secret: String, openai: OpenAIService, pinecone: PineconeService) -> Self {
-        Self { 
-            db, 
-            jwt_secret, 
+    pub fn new(
+        db: PgPool,
+        jwt_secret: String,
+        openai: OpenAIService,
+        pinecone: PineconeService,
+        pinecone_ie: PineconeIEService,
+    ) -> Self {
+        Self {
+            db,
+            jwt_secret,
             openai,
-            pinecone
+            pinecone,
+            pinecone_ie,
         }
     }
     pub fn db(&self) -> &PgPool {
         &self.db
     }
+    pub fn pinecone_ie(&self) -> &PineconeIEService {
+        &self.pinecone_ie
+    }
+
     pub fn jwt_secret(&self) -> &str {
         &self.jwt_secret
     }
@@ -181,11 +194,11 @@ impl LumaService {
 
     // DOCUMENT METHODS
     pub async fn upload_document(&self, user_id: i32, namespace_id: i32, file_name: String,file_content: Vec<u8>,) -> Result<DocumentResponse, (StatusCode, String)> {
-        documents::upload_document(&self.db, user_id, namespace_id, file_name, file_content, &self.pinecone, &self.openai,).await
+        documents::upload_document(&self.db, user_id, namespace_id, file_name, file_content, &self.pinecone_ie, &self.openai,).await
     }
 
     pub async fn delete_document(&self, user_id: i32, namespace_id: i32, document_id: i32,) -> Result<String, (StatusCode, String)> {
-        documents::delete_document(&self.db, user_id, namespace_id, document_id, &self.pinecone,).await
+        documents::delete_document(&self.db, user_id, namespace_id, document_id, &self.pinecone_ie,).await
     }
 
     pub async fn list_documents(&self, user_id: i32, namespace_id: i32,) -> Result<Vec<DocumentListItem>, (StatusCode, String)> {

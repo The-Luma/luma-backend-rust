@@ -74,77 +74,15 @@ pub async fn upload_document(
         return Err((StatusCode::BAD_REQUEST, "No text could be extracted from the document. Please ensure the document contains readable text.".to_string()));
     }
     
-    // Generate a unique document ID
-    let document_id = Uuid::new_v4().to_string();
-    
-    // Create a shared reference to chunks for embedding creation
-    let chunks_arc = Arc::new(chunks);
-    
-    // Process chunks in batches for better performance
-    const BATCH_SIZE: usize = 10;
-    let mut embedding_futures = Vec::with_capacity(chunks_len);
-    
-    for batch_start in (0..chunks_len).step_by(BATCH_SIZE) {
-        let batch_end = (batch_start + BATCH_SIZE).min(chunks_len);
-        let mut batch_futures = Vec::with_capacity(batch_end - batch_start);
-        
-        for i in batch_start..batch_end {
-            let chunk = chunks_arc[i].clone();
-            let openai_clone = openai.clone();
-            
-            let future = task::spawn(async move {
-                match openai_clone.create_embedding(&chunk).await {
-                    Ok(embedding) => Ok((i, embedding)),
-                    Err(e) => Err(e.to_string())
-                }
-            });
-            
-            batch_futures.push(future);
-        }
-        
-        // Wait for this batch to complete before starting the next batch
-        let batch_results = join_all(batch_futures).await;
-        
-        // Process batch results
-        for result in batch_results {
-            match result {
-                Ok(Ok((i, embedding))) => embedding_futures.push((i, embedding)),
-                Ok(Err(e)) => return Err((StatusCode::INTERNAL_SERVER_ERROR, 
-                                         format!("Failed to create embedding: {}", e))),
-                Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, 
-                                     format!("Task join error: {}", e))),
-            }
-        }
-    }
-    
-    // Sort embeddings by chunk index to maintain order
-    embedding_futures.sort_by(|a, b| a.0.cmp(&b.0));
-    let embeddings: Vec<Vec<f32>> = embedding_futures.into_iter().map(|(_, emb)| emb).collect();
-    
-    // Prepare documents for upsert
-    let mut documents = Vec::with_capacity(chunks_len);
-    for i in 0..chunks_len {
-        let chunk_id = format!("{}-{}", document_id, i);
-        let chunk = chunks_arc[i].clone();
-        documents.push((chunk_id, chunk));
-    }
-
-    // Upload to Pinecone IE
-    pinecone.upsert(&namespace_id.to_string(), documents)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to store in vector database: {}", e)))?;
-
-    // Generate vector IDs
-    let vec_ids: Vec<String> = (0..chunks_len)
-        .map(|i| format!("{}-{}", document_id, i))
-        .collect();
+    // Generate a unique document ID for the parent document
+    let parent_document_id = Uuid::new_v4().to_string();
     
     // Start a database transaction for atomic operations
     let mut transaction = db.begin().await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     
-    // Store document metadata in database
-    let document = sqlx::query!(
+    // Store parent document metadata in database
+    let parent_document = sqlx::query!(
         r#"
         INSERT INTO document (user_id, title, file_path, file_metadata, type, is_public, uploaded_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -157,7 +95,8 @@ pub async fn upload_document(
             "size": file_content.len(),
             "chunks": chunks_len,
             "original_filename": file_name,
-            "storage_path": storage_name
+            "storage_path": storage_name,
+            "parent_document_id": parent_document_id
         }),
         "pdf", // TODO: Determine file type from extension
         false,  // Default to private
@@ -167,19 +106,85 @@ pub async fn upload_document(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    // Create namespace_document association with vector IDs
+    // Create a vector to store chunk document IDs
+    let mut chunk_document_ids = Vec::with_capacity(chunks_len);
+    let mut documents_for_pinecone = Vec::with_capacity(chunks_len);
+    
+    // Create a document record for each chunk
+    for i in 0..chunks_len {
+        let chunk_id = format!("{}-{}", parent_document_id, i);
+        let chunk = chunks[i].clone();
+        
+        // Insert chunk document
+        let chunk_document = sqlx::query!(
+            r#"
+            INSERT INTO document (user_id, title, file_path, file_metadata, type, is_public, uploaded_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id
+            "#,
+            user_id,
+            format!("{} (Chunk {})", file_name, i + 1),
+            format!("{}-chunk-{}", storage_name, i),
+            serde_json::json!({
+                "parent_document_id": parent_document_id,
+                "chunk_index": i,
+                "total_chunks": chunks_len,
+                "original_filename": file_name
+            }),
+            "chunk",
+            false,
+            Utc::now().naive_utc()
+        )
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        
+        // Store the chunk document ID
+        chunk_document_ids.push(chunk_document.id);
+        
+        // Add to Pinecone documents
+        documents_for_pinecone.push((chunk_id, chunk));
+    }
+
+    // Upload to Pinecone IE
+    match pinecone.upsert(&namespace_id.to_string(), documents_for_pinecone).await {
+        Ok(_) => (),
+        Err(e) => {
+            println!("Pinecone IE upsert error details: {:?}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, 
+                format!("Failed to store in vector database: {}", e)));
+        }
+    }
+
+    // Create namespace_document association for the parent document
     sqlx::query!(
         r#"
         INSERT INTO namespace_doc (namespace_id, doc_id, vec_id)
         VALUES ($1, $2, $3)
         "#,
         namespace_id,
-        document.id,
-        &vec_ids
+        parent_document.id,
+        &chunk_document_ids.iter().map(|id| id.to_string()).collect::<Vec<String>>()
     )
     .execute(&mut *transaction)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    
+    // Create namespace_document associations for each chunk
+    for chunk_id in &chunk_document_ids {
+        sqlx::query!(
+            r#"
+            INSERT INTO namespace_doc (namespace_id, doc_id, vec_id)
+            VALUES ($1, $2, $3)
+            "#,
+            namespace_id,
+            chunk_id,
+            &[format!("{}-{}", parent_document_id, chunk_id)]
+        )
+        .execute(&mut *transaction)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    }
     
     // Commit the transaction
     transaction.commit().await
@@ -187,9 +192,9 @@ pub async fn upload_document(
     
     // Return the document response with comprehensive information
     Ok(DocumentResponse {
-        id: document.id,
-        name: document.title,
-        created_at: DateTime::from_naive_utc_and_offset(document.uploaded_at, Utc),
+        id: parent_document.id,
+        name: parent_document.title,
+        created_at: DateTime::from_naive_utc_and_offset(parent_document.uploaded_at, Utc),
         namespace_id,
         file_metadata: serde_json::json!({
             "size_bytes": file_content.len(),
@@ -197,17 +202,17 @@ pub async fn upload_document(
             "storage_path": storage_name,
             "original_filename": file_name
         }),
-        is_public: document.is_public,
-        type_: document.r#type,
+        is_public: parent_document.is_public,
+        type_: parent_document.r#type,
         chunks: ChunkInfo {
             count: chunks_len,
-            vector_ids: vec_ids,
-            embedding_dimension: embeddings[0].len()
+            vector_ids: chunk_document_ids.iter().map(|id| id.to_string()).collect(),
+            embedding_dimension: 0, // No embeddings are created with the new service
         },
         text_preview: if chunks_len == 0 {
             "No text extracted".to_string()
         } else {
-            chunks_arc[0][..chunks_arc[0].len().min(200)].to_string()
+            chunks[0][..chunks[0].len().min(200)].to_string()
         }
     })
 }
@@ -256,7 +261,7 @@ pub async fn delete_document(
     // Get document metadata and vector IDs
     let document_info = sqlx::query!(
         r#"
-        SELECT d.file_path, nd.vec_id
+        SELECT d.file_path, d.file_metadata, nd.vec_id
         FROM document d
         JOIN namespace_doc nd ON d.id = nd.doc_id
         WHERE nd.namespace_id = $1 AND d.id = $2
@@ -269,17 +274,75 @@ pub async fn delete_document(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
     .ok_or_else(|| (StatusCode::NOT_FOUND, "Document not found".to_string()))?;
 
+    // Extract parent document ID from metadata
+    let parent_document_id = document_info.file_metadata
+        .get("parent_document_id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
     // Delete the file using FileService
     FileService::delete_file(namespace_id, &document_info.file_path)?;
 
     // Delete vectors from Pinecone
     let namespace_str = namespace_id.to_string();
-    pinecone.delete_vectors(&namespace_str, &document_info.vec_id)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, 
-                     format!("Failed to delete vectors from Pinecone: {}", e)))?;
+    //TODO
+    // pinecone.delete_vectors(&namespace_str, &document_info.vec_id)
+    //     .await
+    //     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR,
+    //                  format!("Failed to delete vectors from Pinecone: {}", e)))?;
 
-    // Delete document from database
+    // Start a transaction for atomic operations
+    let mut transaction = db.begin().await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // If this is a parent document, delete all associated chunk documents
+    if parent_document_id.is_empty() {
+        // Find all chunk documents associated with this parent
+        let chunk_documents = sqlx::query!(
+            r#"
+            SELECT d.id, d.file_path
+            FROM document d
+            WHERE d.file_metadata->>'parent_document_id' = $1
+            "#,
+            document_id.to_string()
+        )
+        .fetch_all(&mut *transaction)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+        // Delete each chunk document
+        for chunk in chunk_documents {
+            // Delete the chunk file
+            FileService::delete_file(namespace_id, &chunk.file_path)?;
+
+            // Delete namespace_doc association for the chunk
+            sqlx::query!(
+                r#"
+                DELETE FROM namespace_doc
+                WHERE namespace_id = $1 AND doc_id = $2
+                "#,
+                namespace_id,
+                chunk.id
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            // Delete the chunk document
+            sqlx::query!(
+                r#"
+                DELETE FROM document
+                WHERE id = $1
+                "#,
+                chunk.id
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        }
+    }
+
+    // Delete namespace_doc association for the main document
     sqlx::query!(
         r#"
         DELETE FROM namespace_doc
@@ -288,7 +351,7 @@ pub async fn delete_document(
         namespace_id,
         document_id
     )
-    .execute(db)
+    .execute(&mut *transaction)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -300,9 +363,13 @@ pub async fn delete_document(
         "#,
         document_id
     )
-    .execute(db)
+    .execute(&mut *transaction)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Commit the transaction
+    transaction.commit().await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok("Document deleted successfully".to_string())
 }

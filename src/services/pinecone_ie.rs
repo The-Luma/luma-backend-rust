@@ -42,6 +42,7 @@ pub struct Hit {
     fields: serde_json::Value,
 }
 
+#[derive(Clone)]
 pub struct PineconeIEService {
     client: Client,
     base_url: String,
@@ -103,33 +104,49 @@ impl PineconeIEService {
             self.base_url, namespace_id
         );
 
-        // Convert documents to NDJSON format
-        let mut ndjson = Vec::new();
-        for (doc_id, text) in documents {
-            let doc = Document {
-                id: doc_id,
-                text,
-            };
-            let json = serde_json::to_string(&doc)?;
-            writeln!(ndjson, "{}", json)?;
+        // Split documents into batches of 96 (Pinecone IE limit)
+        const BATCH_SIZE: usize = 96;
+        let total_documents = documents.len();
+        
+        for batch_index in 0..(total_documents + BATCH_SIZE - 1) / BATCH_SIZE {
+            let start_idx = batch_index * BATCH_SIZE;
+            let end_idx = std::cmp::min(start_idx + BATCH_SIZE, total_documents);
+            let batch = &documents[start_idx..end_idx];
+
+            // Convert documents to NDJSON format
+            let mut ndjson = Vec::new();
+            for (doc_id, text) in batch {
+                let doc = Document {
+                    id: doc_id.clone(),
+                    text: text.clone(),
+                };
+                let json = serde_json::to_string(&doc)?;
+                writeln!(ndjson, "{}", json)?;
+            }
+
+            let response = self.client
+                .post(&url)
+                .header("Api-Key", &self.api_key)
+                .header("Content-Type", "application/x-ndjson")
+                .body(ndjson)
+                .send()
+                .await?;
+
+            if response.status() == StatusCode::CREATED {
+                // Success
+            } else {
+                // Get the response body for more detailed error information
+                let status = response.status();
+                let body = response.text().await?;
+                
+                let error_message = format!(
+                    "Upsert request failed with status: {}. Response body: {}",
+                    status, body
+                );
+                return Err(error_message.into());
+            }
         }
 
-        let response = self.client
-            .post(&url)
-            .header("Api-Key", &self.api_key)
-            .header("Content-Type", "application/x-ndjson")
-            .body(ndjson)
-            .send()
-            .await?;
-
-        if response.status() == StatusCode::CREATED {
-            Ok(())
-        } else {
-            let error_message = format!(
-                "Upsert request failed with status: {}",
-                response.status()
-            );
-            Err(error_message.into())
-        }
+        Ok(())
     }
 }
