@@ -293,4 +293,28 @@ pub struct DocumentResponse {
     pub name: String,
     pub created_at: DateTime<Utc>,
     pub namespace_id: i32,
+    pub file_metadata: serde_json::Value,
+    pub is_public: bool,
+    pub type_: String,
+    pub chunks: ChunkInfo,
+    pub text_preview: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocumentListItem {
+    pub id: i32,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub namespace_id: i32,
+    pub file_metadata: serde_json::Value,
+    pub is_public: bool,
+    pub type_: String,
+    pub user_id: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ChunkInfo {
+    pub count: usize,
+    pub vector_ids: Vec<String>,
+    pub embedding_dimension: usize,
 } 

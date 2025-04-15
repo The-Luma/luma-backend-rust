@@ -11,7 +11,7 @@ use crate::models::models::{
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
     ChatMessage, ChatResponse, Conversation, ConversationListItem,
     CreateNamespaceRequest, Namespace, NamespaceQuery, ShareNamespaceRequest,
-    DocumentResponse
+    DocumentResponse, DocumentListItem
 };
 use crate::services::auth;
 use crate::services::users;
@@ -330,6 +330,18 @@ impl LumaService {
             namespace_id,
             document_id,
             &self.pinecone,
+        ).await
+    }
+
+    pub async fn list_documents(
+        &self,
+        user_id: i32,
+        namespace_id: i32,
+    ) -> Result<Vec<DocumentListItem>, (StatusCode, String)> {
+        documents::list_documents(
+            &self.db,
+            user_id,
+            namespace_id,
         ).await
     }
 }

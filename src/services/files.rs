@@ -71,4 +71,37 @@ impl FileService {
                          
         Ok(())
     }
+    
+    /// Split text into chunks of specified size
+    /// 
+    /// This function splits text by words to avoid cutting words in half.
+    /// Each chunk will be as close to the specified size as possible without exceeding it.
+    pub fn split_text_into_chunks(text: &str, chunk_size: usize) -> Vec<String> {
+        let mut chunks = Vec::new();
+        let mut current_chunk = String::new();
+        
+        // Split by words to avoid cutting words in half
+        let words: Vec<&str> = text.split_whitespace().collect();
+        
+        for word in words {
+            // If adding this word would exceed the chunk size, start a new chunk
+            if current_chunk.len() + word.len() + 1 > chunk_size && !current_chunk.is_empty() {
+                chunks.push(current_chunk);
+                current_chunk = String::new();
+            }
+            
+            // Add the word to the current chunk
+            if !current_chunk.is_empty() {
+                current_chunk.push(' ');
+            }
+            current_chunk.push_str(word);
+        }
+        
+        // Add the last chunk if it's not empty
+        if !current_chunk.is_empty() {
+            chunks.push(current_chunk);
+        }
+        
+        chunks
+    }
 } 

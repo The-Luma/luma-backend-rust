@@ -223,3 +223,15 @@ pub async fn delete_document(
         Err((status, message)) => (status, Json(json!({ "error": message }))),
     }
 }
+
+/// List documents in a namespace
+pub async fn list_documents(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+) -> impl IntoResponse {
+    match service.list_documents(user.id, namespace_id).await {
+        Ok(documents) => (StatusCode::OK, Json(json!({ "documents": documents }))),
+        Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}

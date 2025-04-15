@@ -34,5 +34,9 @@ pub use chat::{
     create_namespace,
     list_namespaces,
     delete_namespace,
-    share_namespace
+    share_namespace,
+    revoke_namespace_access,
+    upload_document,
+    delete_document,
+    list_documents
 };
