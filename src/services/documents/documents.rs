@@ -334,4 +334,72 @@ pub async fn list_documents(
         .collect();
     
     Ok(document_list)
+}
+
+/// Download a document from a namespace
+/// 
+/// This function:
+/// 1. Verifies user has access to the namespace
+/// 2. Retrieves the document metadata from the database
+/// 3. Returns the file content and metadata
+pub async fn download_document(
+    db: &PgPool,
+    user_id: i32,
+    namespace_id: i32,
+    document_id: i32,
+) -> Result<(Vec<u8>, String, String), (StatusCode, String)> {
+    // Verify namespace access
+    let has_access = sqlx::query!(
+        r#"
+        SELECT EXISTS (
+            SELECT 1
+            FROM namespace n
+            LEFT JOIN namespace_auth na ON n.id = na.namespace_id AND na.user_id = $1
+            WHERE n.id = $2
+            AND (
+                n.user_id = $1  -- User is the owner
+                OR na.auth_level >= 1  -- User has at least read access
+                OR n.is_public = true  -- Namespace is public
+            )
+        ) as "exists!"
+        "#,
+        user_id,
+        namespace_id
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .exists;
+
+    if !has_access {
+        return Err((StatusCode::FORBIDDEN, "You do not have permission to download documents from this namespace".to_string()));
+    }
+
+    // Get document metadata
+    let document = sqlx::query!(
+        r#"
+        SELECT d.file_path, d.title
+        FROM document d
+        JOIN namespace_doc nd ON d.id = nd.doc_id
+        WHERE nd.namespace_id = $1 AND d.id = $2
+        "#,
+        namespace_id,
+        document_id
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .ok_or_else(|| (StatusCode::NOT_FOUND, "Document not found".to_string()))?;
+
+    // Read file content
+    let file_path = std::path::PathBuf::from("uploads")
+        .join(namespace_id.to_string())
+        .join(&document.file_path);
+
+    let file_content = tokio::fs::read(&file_path)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, 
+                     format!("Failed to read file: {}", e)))?;
+
+    Ok((file_content, document.title, document.file_path))
 } 

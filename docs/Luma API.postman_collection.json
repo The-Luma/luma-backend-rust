@@ -1488,6 +1488,101 @@
 							"body": "{\n    \"message\": \"Document deleted successfully\"\n}"
 						}
 					]
+				},
+				{
+					"name": "/documents/{namespace_id}/{document_id}/download",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/documents/1/1/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"1",
+								"1",
+								"download"
+							]
+						},
+						"description": "Download a document from a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1/1/download",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1",
+										"1",
+										"download"
+									]
+								},
+								"description": "Download a document from a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "binary",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/pdf"
+								},
+								{
+									"key": "Content-Disposition",
+									"value": "attachment; filename=\"example.pdf\""
+								}
+							],
+							"cookie": [],
+							"body": "[Binary data]"
+						},
+						{
+							"name": "Error",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1/999/download",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1",
+										"999",
+										"download"
+									]
+								},
+								"description": "Download a document from a namespace. Requires authentication."
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Disposition",
+									"value": "inline"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": \"Document not found\"\n}"
+						}
+					]
 				}
 			],
 			"description": "Document related endpoints"

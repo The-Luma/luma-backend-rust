@@ -289,4 +289,8 @@ impl LumaService {
     pub async fn list_documents(&self, user_id: i32, namespace_id: i32,) -> Result<Vec<DocumentListItem>, (StatusCode, String)> {
         documents::list_documents( &self.db, user_id, namespace_id,).await
     }
+
+    pub async fn download_document(&self, user_id: i32, namespace_id: i32, document_id: i32,) -> Result<(Vec<u8>, String, String), (StatusCode, String)> {
+        documents::download_document(&self.db, user_id, namespace_id, document_id).await
+    }
 }

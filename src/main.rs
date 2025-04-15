@@ -27,7 +27,7 @@ use crate::{
         chat::{
             start_chat, send_message, get_chat_history, list_conversations, delete_conversation,
             create_namespace, list_namespaces, delete_namespace, share_namespace, revoke_namespace_access,
-            upload_document, delete_document, list_documents
+            upload_document, delete_document, list_documents, download_document
         },
     },
     services::{luma::LumaService, db::{init_db_pool, run_test_query}},
@@ -100,6 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/documents/upload/{namespace_id}", post(upload_document))
         .route("/documents/{namespace_id}/{document_id}", delete(delete_document))
         .route("/documents/{namespace_id}", get(list_documents))
+        .route("/documents/{namespace_id}/{document_id}/download", get(download_document))
         .layer(from_fn_with_state(
             service.clone(),
             crate::middleware::auth::check_if_auth,

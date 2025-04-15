@@ -4,6 +4,7 @@ use axum::{
     Json,
     response::IntoResponse,
     http::StatusCode,
+    http::header,
 };
 use crate::services::luma::LumaService;
 use crate::models::models::{
@@ -233,5 +234,46 @@ pub async fn list_documents(
     match service.list_documents(user.id, namespace_id).await {
         Ok(documents) => (StatusCode::OK, Json(json!({ "documents": documents }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
+/// Download a document from a namespace
+pub async fn download_document(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path((namespace_id, document_id)): Path<(i32, i32)>,
+) -> impl IntoResponse {
+    match service.download_document(user.id, namespace_id, document_id).await {
+        Ok((file_content, title, file_path)) => {
+            let extension = file_path.split('.').last().unwrap_or("pdf");
+            let content_type = match extension {
+                "pdf" => "application/pdf",
+                _ => "application/octet-stream",
+            };
+
+            // Create owned strings for the headers
+            let content_disposition = format!("attachment; filename=\"{}\"", title);
+            
+            // Use owned values in the headers array
+            let headers = [
+                (header::CONTENT_TYPE, content_type.to_string()),
+                (header::CONTENT_DISPOSITION, content_disposition),
+            ];
+
+            (StatusCode::OK, headers, file_content)
+        },
+        Err((status, message)) => {
+            // Create the error JSON value directly
+            let error_json = json!({ "error": message });
+            let error_bytes = serde_json::to_vec(&error_json).unwrap_or_default();
+            
+            // Use owned values for error headers
+            let headers = [
+                (header::CONTENT_TYPE, "application/json".to_string()),
+                (header::CONTENT_DISPOSITION, "inline".to_string()),
+            ];
+            
+            (status, headers, error_bytes)
+        },
     }
 }
