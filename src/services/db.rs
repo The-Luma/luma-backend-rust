@@ -17,7 +17,9 @@ pub async fn init_db_pool(config: &Config) -> Result<PgPool, Error> {
 pub async fn run_test_query(pool: &PgPool) -> Result<(), Error> {
     println!("-------------------------------------");
     println!("Testing PostgreSQL connection...");
-    let row: (i64,) = sqlx::query_as("SELECT $1")
+    
+    // Use a specific type (i64) instead of letting it default to the unit type
+    let _result: i64 = sqlx::query_scalar("SELECT $1")
         .bind(150_i64)
         .fetch_one(pool)
         .await?;

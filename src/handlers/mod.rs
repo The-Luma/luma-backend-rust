@@ -10,7 +10,6 @@ pub use utils::{
 pub use auth::{
     check_admin_setup,
     create_admin,
-    login,
     refresh_token,
     logout,
     create_invitation,
@@ -23,20 +22,4 @@ pub use users::{
     search_users,
     delete_account,
     admin_delete_user
-};
-
-pub use chat::{
-    start_chat,
-    send_message,
-    get_chat_history,
-    list_conversations,
-    delete_conversation,
-    create_namespace,
-    list_namespaces,
-    delete_namespace,
-    share_namespace,
-    revoke_namespace_access,
-    upload_document,
-    delete_document,
-    list_documents
 };

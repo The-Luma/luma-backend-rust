@@ -6,29 +6,26 @@ use dotenvy::dotenv;
 #[derive(Debug, Deserialize)]
 pub struct Config {
     // Database configuration
-    pub database_url: String,
     pub backend_db_connection: String,
     
     // Authentication
     pub jwt_secret: String,
     
     // Server configuration
-    pub backend_port: u16,
-    pub backend_log_level: String,
     pub frontend_url: String,
+    pub backend_port: u16,
     
     // Pinecone configuration
     pub pinecone_api_key: String,
-    pub pinecone_index_name: String,
-    pub pinecone_url: String,
+    pub pinecone_index: String,
     
     // OpenAI configuration
     pub openai_api_key: String,
     pub openai_org_id: String,
-    pub openai_completion_model: String,
+    // pub openai_completion_model: String,
     pub openai_chat_model: String,
-    pub openai_embedding_model: String,
-    pub openai_embedding_dimensions: u32,
+    // pub openai_embedding_model: String,
+    // pub openai_embedding_dimensions: u32,
 }
 
 impl Config {
@@ -38,21 +35,18 @@ impl Config {
         dotenv().ok();
 
         Ok(Self {
-            database_url: env::var("DATABASE_URL")?,
             backend_db_connection: env::var("BACKEND_DB_CONNECTION")?,
             jwt_secret: env::var("BACKEND_JWT_SECRET")?,
-            backend_port: env::var("BACKEND_PORT")?.parse()?,
-            backend_log_level: env::var("BACKEND_LOG_LEVEL")?,
             frontend_url: env::var("FRONTEND_URL")?,
+            backend_port: env::var("BACKEND_PORT").unwrap_or_else(|_| "3000".to_string()).parse()?,
             pinecone_api_key: env::var("BACKEND_PINECONE_API_KEY")?,
-            pinecone_index_name: env::var("BACKEND_PINECONE_INDEX_NAME")?,
-            pinecone_url: env::var("BACKEND_PINECONE_URL")?,
+            pinecone_index: env::var("BACKEND_PINECONE_INDEX")?,
             openai_api_key: env::var("BACKEND_OPENAI_API_KEY")?,
             openai_org_id: env::var("BACKEND_OPENAI_ORG_ID")?,
-            openai_completion_model: env::var("BACKEND_OPENAI_COMPLETION_MODEL")?,
             openai_chat_model: env::var("BACKEND_OPENAI_CHAT_MODEL")?,
-            openai_embedding_model: env::var("BACKEND_OPENAI_EMBEDDING_MODEL")?,
-            openai_embedding_dimensions: env::var("BACKEND_OPENAI_EMBEDDING_DIMENSIONS")?.parse()?,
+            // openai_completion_model: env::var("BACKEND_OPENAI_COMPLETION_MODEL")?,
+            // openai_embedding_model: env::var("BACKEND_OPENAI_EMBEDDING_MODEL")?,
+            // openai_embedding_dimensions: env::var("BACKEND_OPENAI_EMBEDDING_DIMENSIONS")?.parse()?,
         })
     }
 } 

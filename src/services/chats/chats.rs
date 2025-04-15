@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use axum::http::StatusCode;
-use chrono::{DateTime, Utc, NaiveDateTime};
-use crate::models::models::{ChatMessage, ChatResponse, Conversation, ConversationListItem};
+use chrono::{DateTime, Utc};
+use crate::models::models::{ChatResponse, Conversation, ConversationListItem};
 use crate::services::openai::OpenAIService;
 use crate::services::pinecone_ie::PineconeIEService;
 
@@ -70,7 +70,6 @@ pub async fn send_chat_message(
     user_id: i32,
     content: String,
     conversation_id: Option<i32>,
-    namespace_id: Option<i32>,
     openai: &OpenAIService,
     pinecone_ie: &PineconeIEService,
 ) -> Result<ChatResponse, (StatusCode, String)> {
@@ -299,7 +298,7 @@ pub async fn delete_conversation(
     conversation_id: i32,
 ) -> Result<(), (StatusCode, String)> {
     // Verify conversation ownership
-    let chat = sqlx::query!(
+    sqlx::query!(
         r#"
         SELECT c.id, c.user_id, c.started_at, n.id as namespace_id
         FROM chats c

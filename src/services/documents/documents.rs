@@ -1,18 +1,12 @@
 use crate::models::models::ChunkInfo;
 use sqlx::PgPool;
 use axum::http::StatusCode;
-use chrono::{DateTime, Utc, NaiveDateTime};
-use crate::models::models::{Document, NamespaceDocument, DocumentResponse, DocumentListItem};
+use chrono::{DateTime, Utc};
+use crate::models::models::{DocumentResponse, DocumentListItem};
 use crate::services::pinecone_ie::PineconeIEService;
-use crate::services::openai::OpenAIService;
 use crate::services::files::FileService;
 use uuid::Uuid;
-use std::collections::BTreeMap;
-use pinecone_sdk::models::{Metadata, Value, Kind};
 use serde_json;
-use tokio::task;
-use futures::future::join_all;
-use std::sync::Arc;
 
 /// Upload a document to a namespace
 /// 
@@ -29,7 +23,6 @@ pub async fn upload_document(
     file_name: String,
     file_content: Vec<u8>,
     pinecone: &PineconeIEService,
-    openai: &OpenAIService,
 ) -> Result<DocumentResponse, (StatusCode, String)> {
     // Verify namespace access
     let has_access = sqlx::query!(

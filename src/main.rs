@@ -8,15 +8,11 @@ use axum::{
     http::{header, Method},
     middleware::from_fn_with_state,
     routing::{delete, get, post},
-    Router,
-    extract::{State, Extension, Path},
-    response::IntoResponse,
+    Router
 };
-use dotenvy::dotenv;
-use sqlx::postgres::PgPoolOptions;
+
 use tower_http::cors::CorsLayer;
 use services::openai::OpenAIService;
-use services::pinecone::PineconeService;
 use services::pinecone_ie::PineconeIEService;
 use crate::{
     config::Config,
@@ -40,14 +36,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let openai_service = OpenAIService::new(&config)?;
     openai_service.check_connection().await?;
+    println!("Using OpenAI model: {}", config.openai_chat_model);
+    println!("-------------------------------------");
 
-    let mut pinecone_service = PineconeService::new(&config)?;
-    pinecone_service.check_connection(&config).await?;
-
-    let pinecone_ie_service = PineconeIEService::new(
+    println!("Testing Pinecone connection...");
+    
+    let mut pinecone_ie_service = PineconeIEService::new(
         config.pinecone_api_key.clone(),
-        config.pinecone_url.clone(),
+        config.pinecone_index.clone(),
     );
+    
+    pinecone_ie_service.initialize().await?;
+    println!("Successfully connected to Pinecone");
+    println!("-------------------------------------");
 
     let pool = init_db_pool(&config).await?;
     run_test_query(&pool).await?;
@@ -56,7 +57,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         pool,
         config.jwt_secret,
         openai_service,
-        pinecone_service,
         pinecone_ie_service,
     );
 
@@ -136,7 +136,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(service);
 
     // Run it
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let addr = format!("0.0.0.0:{}", config.backend_port);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!(
         r#"
  _       __     __                             __           __
@@ -147,7 +148,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "#
     );
     println!("-------------------------------------");
-    println!("Server running on http://0.0.0.0:3000");
+    println!("Server running on http://{}", addr);
     println!("-------------------------------------");
     axum::serve(listener, app).await?;
 
