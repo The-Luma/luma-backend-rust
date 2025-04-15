@@ -192,14 +192,13 @@ pub struct SearchUsersResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct ChatStart {
-    pub conversation_id: Option<i32>,
+    // pub conversation_id: Option<i32>,
     pub namespace_id: Option<i32>,
 }
 #[derive(Debug, Deserialize)]
 pub struct ChatMessage {
     pub content: String,
     pub conversation_id: Option<i32>,
-    pub namespace_id: Option<i32>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -281,11 +280,6 @@ pub struct NamespaceDocument {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct UploadDocumentRequest {
-    pub namespace_id: i32,
-    pub file_name: String,
-}
 
 #[derive(Debug, Serialize)]
 pub struct DocumentResponse {

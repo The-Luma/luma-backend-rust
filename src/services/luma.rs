@@ -9,8 +9,7 @@ use crate::models::models::{
     Claims, CreateAdminRequest, CreateInvitationRequest,
     InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
-    ChatMessage, ChatResponse, Conversation, ConversationListItem,
-    CreateNamespaceRequest, Namespace, NamespaceQuery, ShareNamespaceRequest,
+    ChatResponse, Conversation, ConversationListItem, Namespace,
     DocumentResponse, DocumentListItem
 };
 use crate::services::auth;
@@ -19,7 +18,6 @@ use crate::services::chats;
 use crate::services::chats::namespaces;
 use crate::services::documents::documents;
 use crate::services::openai::OpenAIService;
-use crate::services::pinecone::PineconeService;
 use crate::services::pinecone_ie::PineconeIEService;
 
 pub struct AppConfig {
@@ -39,7 +37,6 @@ pub struct LumaService {
     db: PgPool,
     jwt_secret: String,
     openai: OpenAIService,
-    pinecone: PineconeService,
     pinecone_ie: PineconeIEService,
 }
 
@@ -48,22 +45,17 @@ impl LumaService {
         db: PgPool,
         jwt_secret: String,
         openai: OpenAIService,
-        pinecone: PineconeService,
         pinecone_ie: PineconeIEService,
     ) -> Self {
         Self {
             db,
             jwt_secret,
             openai,
-            pinecone,
             pinecone_ie,
         }
     }
     pub fn db(&self) -> &PgPool {
         &self.db
-    }
-    pub fn pinecone_ie(&self) -> &PineconeIEService {
-        &self.pinecone_ie
     }
 
     pub fn jwt_secret(&self) -> &str {
@@ -146,14 +138,12 @@ impl LumaService {
         user_id: i32,
         content: String,
         conversation_id: Option<i32>,
-        namespace_id: Option<i32>,
     ) -> Result<ChatResponse, (StatusCode, String)> {
         chats::chats::send_chat_message(
             &self.db,
             user_id,
             content,
             conversation_id,
-            namespace_id,
             &self.openai,
             &self.pinecone_ie
         ).await
@@ -194,7 +184,7 @@ impl LumaService {
 
     // DOCUMENT METHODS
     pub async fn upload_document(&self, user_id: i32, namespace_id: i32, file_name: String,file_content: Vec<u8>,) -> Result<DocumentResponse, (StatusCode, String)> {
-        documents::upload_document(&self.db, user_id, namespace_id, file_name, file_content, &self.pinecone_ie, &self.openai,).await
+        documents::upload_document(&self.db, user_id, namespace_id, file_name, file_content, &self.pinecone_ie).await
     }
 
     pub async fn delete_document(&self, user_id: i32, namespace_id: i32, document_id: i32,) -> Result<String, (StatusCode, String)> {
