@@ -21,7 +21,7 @@ chrono = { version = "0.4.40", features = ["serde"] }
 validator = { version = "0.20.0", features = ["derive"] }
 bcrypt = "0.17.0"
 jsonwebtoken = "9.3.1"
-uuid = { version = "1.7.0", features = ["v4", "serde"] }
+uuid = { version = "1.16.0", features = ["v4", "serde"] }
 time = "0.3.41"
 async-openai = "0.28.1"
 pdf-extract = "0.9.0"
