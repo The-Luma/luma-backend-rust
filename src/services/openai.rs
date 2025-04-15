@@ -8,7 +8,8 @@ use async_openai::{
         ChatCompletionRequestAssistantMessageArgs,
         ChatCompletionToolArgs,
         ChatCompletionToolType,
-        FunctionObject
+        FunctionObject,
+        ChatCompletionRequestToolMessageArgs
     }
 };
 use std::error::Error;
@@ -207,34 +208,33 @@ impl OpenAIService {
                     for (i, hit) in search_results.result.hits.iter().enumerate() {
                         context.push_str(&format!("{}. {}\n\n", i + 1, hit.fields.text));
                     }
-
-                    // Create a new message with the search results
-                    let mut new_messages = messages;
-                    new_messages.push(("assistant".to_string(), response_message.content.unwrap_or_default()));
-                    new_messages.push(("assistant".to_string(), format!("I found some information that might help: {}", context)));
-                    new_messages.push(("user".to_string(), last_message.to_string()));
-
+                    
+                    // Add the assistant's message with tool calls
+                    let assistant_message = ChatCompletionRequestAssistantMessageArgs::default()
+                        .content(response_message.content.unwrap_or_default())
+                        .tool_calls([tool_call.clone()])
+                        .build()?;
+                    
+                    // Add the tool response
+                    let tool_message = ChatCompletionRequestToolMessageArgs::default()
+                        .content(context)
+                        .tool_call_id(tool_call.id.clone())
+                        .build()?;
+                    
+                    // Add the user's follow-up message
+                    let user_message = ChatCompletionRequestUserMessageArgs::default()
+                        .content(last_message)
+                        .build()?;
+                    
                     // Get final response from the model
                     let final_request = CreateChatCompletionRequestArgs::default()
                         .model(&self.chat_model)
                         .max_tokens(max_tokens)
-                        .messages(new_messages.iter().map(|(role, content)| {
-                            match role.to_lowercase().as_str() {
-                                "system" => Ok(ChatCompletionRequestSystemMessageArgs::default()
-                                    .content(content.as_str())
-                                    .build()?
-                                    .into()),
-                                "user" => Ok(ChatCompletionRequestUserMessageArgs::default()
-                                    .content(content.as_str())
-                                    .build()?
-                                    .into()),
-                                "assistant" => Ok(ChatCompletionRequestAssistantMessageArgs::default()
-                                    .content(content.as_str())
-                                    .build()?
-                                    .into()),
-                                _ => Err("Invalid role".into()),
-                            }
-                        }).collect::<Result<Vec<_>, Box<dyn Error>>>()?)
+                        .messages([
+                            assistant_message.into(),
+                            tool_message.into(),
+                            user_message.into(),
+                        ])
                         .build()?;
 
                     let final_response = self.client.chat().create(final_request).await?;
