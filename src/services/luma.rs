@@ -135,113 +135,14 @@ impl LumaService {
         conversation_id: Option<i32>,
         namespace_id: Option<i32>,
     ) -> Result<ChatResponse, (StatusCode, String)> {
-        let conversation_id = conversation_id.ok_or_else(|| {
-            (StatusCode::BAD_REQUEST, "Conversation ID is required".to_string())
-        })?;
-
-        // Verify conversation ownership and get chat details
-        let chat = sqlx::query!(
-            r#"
-            SELECT c.id, c.user_id, c.started_at, n.id as namespace_id
-            FROM chats c
-            JOIN namespace n ON c.namespace_id = n.id
-            WHERE c.id = $1 AND c.user_id = $2
-            "#,
-            conversation_id,
-            user_id
-        )
-        .fetch_optional(&self.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or_else(|| (StatusCode::NOT_FOUND, "Conversation not found".to_string()))?;
-
-        // Verify namespace access
-        let has_access = sqlx::query!(
-            r#"
-            SELECT EXISTS (
-                SELECT 1
-                FROM namespace n
-                LEFT JOIN namespace_auth na ON na.namespace_id = n.id AND na.user_id = $1
-                WHERE n.id = $2
-                AND (
-                    n.user_id = $1
-                    OR na.user_id IS NOT NULL
-                    OR n.is_public = true
-                )
-            ) as "exists!"
-            "#,
+        chats::chats::send_chat_message(
+            &self.db,
             user_id,
-            chat.namespace_id
-        )
-        .fetch_one(&self.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .exists;
-
-        if !has_access {
-            return Err((StatusCode::FORBIDDEN, "No access to this namespace".to_string()));
-        }
-
-        // Get conversation history for context
-        let messages = sqlx::query_as!(
-            ChatResponse,
-            r#"
-            SELECT id, content, sender_type, time_sent, chat_id as conversation_id
-            FROM message
-            WHERE chat_id = $1
-            ORDER BY time_sent ASC
-            "#,
-            conversation_id
-        )
-        .fetch_all(&self.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        // Insert user message
-        let _ = sqlx::query_as!(
-            ChatResponse,
-            r#"
-            INSERT INTO message (chat_id, sender_type, content, time_sent)
-            VALUES ($1, 'user', $2, $3)
-            RETURNING id, content, sender_type, time_sent, chat_id as conversation_id
-            "#,
-            conversation_id,
             content,
-            chrono::Utc::now().naive_utc()
-        )
-        .fetch_one(&self.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        // Prepare messages for OpenAI
-        let mut chat_messages = messages.iter()
-            .map(|m| (m.sender_type.clone(), m.content.clone()))
-            .collect::<Vec<_>>();
-        chat_messages.push(("user".to_string(), content));
-
-        // Get OpenAI response
-        let bot_response = self.openai.create_chat_completion(chat_messages, 1000)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-            .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to get bot response".to_string()))?;
-
-        // Insert bot response
-        let bot_message = sqlx::query_as!(
-            ChatResponse,
-            r#"
-            INSERT INTO message (chat_id, sender_type, content, time_sent)
-            VALUES ($1, 'assistant', $2, $3)
-            RETURNING id, content, sender_type, time_sent, chat_id as conversation_id
-            "#,
             conversation_id,
-            bot_response,
-            chrono::Utc::now().naive_utc()
-        )
-        .fetch_one(&self.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        Ok(bot_message)
+            namespace_id,
+            &self.openai
+        ).await
     }
 
     pub async fn get_chat_history(&self, user_id: i32, conversation_id: i32) -> Result<Conversation, (StatusCode, String)> {

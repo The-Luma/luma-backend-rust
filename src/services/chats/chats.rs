@@ -2,6 +2,7 @@ use sqlx::PgPool;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc, NaiveDateTime};
 use crate::models::models::{ChatMessage, ChatResponse, Conversation, ConversationListItem};
+use crate::services::openai::OpenAIService;
 
 pub async fn start_chat_conversation(
     db: &PgPool,
@@ -69,12 +70,13 @@ pub async fn send_chat_message(
     content: String,
     conversation_id: Option<i32>,
     namespace_id: Option<i32>,
+    openai: &OpenAIService,
 ) -> Result<ChatResponse, (StatusCode, String)> {
     let conversation_id = conversation_id.ok_or_else(|| {
         (StatusCode::BAD_REQUEST, "Conversation ID is required".to_string())
     })?;
 
-    // Verify conversation ownership
+    // Verify conversation ownership and get chat details
     let chat = sqlx::query!(
         r#"
         SELECT c.id, c.user_id, c.started_at, n.id as namespace_id
@@ -117,8 +119,23 @@ pub async fn send_chat_message(
         return Err((StatusCode::FORBIDDEN, "No access to this namespace".to_string()));
     }
 
+    // Get conversation history for context
+    let messages = sqlx::query_as!(
+        ChatResponse,
+        r#"
+        SELECT id, content, sender_type, time_sent, chat_id as conversation_id
+        FROM message
+        WHERE chat_id = $1
+        ORDER BY time_sent ASC
+        "#,
+        conversation_id
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
     // Insert user message
-    let message = sqlx::query_as!(
+    let _ = sqlx::query_as!(
         ChatResponse,
         r#"
         INSERT INTO message (chat_id, sender_type, content, time_sent)
@@ -127,13 +144,41 @@ pub async fn send_chat_message(
         "#,
         conversation_id,
         content,
-        Utc::now().naive_utc()
+        chrono::Utc::now().naive_utc()
     )
     .fetch_one(db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(message)
+    // Prepare messages for OpenAI
+    let mut chat_messages = messages.iter()
+        .map(|m| (m.sender_type.clone(), m.content.clone()))
+        .collect::<Vec<_>>();
+    chat_messages.push(("user".to_string(), content));
+
+    // Get OpenAI response
+    let bot_response = openai.create_chat_completion(chat_messages, 1000)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to get bot response".to_string()))?;
+
+    // Insert bot response
+    let bot_message = sqlx::query_as!(
+        ChatResponse,
+        r#"
+        INSERT INTO message (chat_id, sender_type, content, time_sent)
+        VALUES ($1, 'assistant', $2, $3)
+        RETURNING id, content, sender_type, time_sent, chat_id as conversation_id
+        "#,
+        conversation_id,
+        bot_response,
+        chrono::Utc::now().naive_utc()
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(bot_message)
 }
 
 pub async fn get_chat_history(
