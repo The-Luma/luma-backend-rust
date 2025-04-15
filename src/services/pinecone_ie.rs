@@ -5,8 +5,22 @@ use std::io::Write;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchRequest {
-    query: Vec<f32>,
+    #[serde(rename = "query")]
+    query: QueryInput,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryInput {
+    #[serde(rename = "inputs")]
+    inputs: QueryInputs,
+    #[serde(rename = "top_k")]
     top_k: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryInputs {
+    #[serde(rename = "text")]
+    text: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,28 +32,35 @@ pub struct Document {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResponse {
-    usage: Usage,
-    result: SearchResult,
+    pub usage: Usage,
+    pub result: SearchResult,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Usage {
-    embed_total_tokens: i32,
-    read_units: i32,
+    #[serde(rename = "embed_total_tokens")]
+    pub embed_total_tokens: i32,
+    #[serde(rename = "read_units")]
+    pub read_units: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
-    hits: Vec<Hit>,
+    pub hits: Vec<Hit>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hit {
     #[serde(rename = "_id")]
-    id: String,
+    pub id: String,
     #[serde(rename = "_score")]
-    score: f32,
-    fields: serde_json::Value,
+    pub score: f32,
+    pub fields: HitFields,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HitFields {
+    pub text: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,15 +90,29 @@ impl PineconeIEService {
         namespace_id: &str,
         query: Vec<f32>,
         top_k: i32,
+        query_text: Option<String>,
     ) -> Result<SearchResponse, Box<dyn Error>> {
+        // Ensure namespace_id is a valid string
+        let namespace_id = namespace_id.trim();
+        
         let url = format!(
             "{}/records/namespaces/{}/search",
             self.base_url, namespace_id
         );
 
+        // Use the query text if provided, otherwise use a placeholder
+        let query_text = query_text.unwrap_or_else(|| "Search query".to_string());
+        //println!("Pinecone IE search: namespace='{}', query='{}', top_k={}",
+                 //namespace_id, query_text, top_k);
+
+        // Create the request with the expected format
         let request = SearchRequest {
-            query,
-            top_k,
+            query: QueryInput {
+                inputs: QueryInputs {
+                    text: query_text,
+                },
+                top_k,
+            },
         };
 
         let response = self.client
@@ -90,11 +125,18 @@ impl PineconeIEService {
 
         if response.status() == StatusCode::OK {
             let search_response = response.json::<SearchResponse>().await?;
+            //println!("Pinecone IE search successful, found {} hits", search_response.result.hits.len());
             Ok(search_response)
         } else {
+            // Get the response body for more detailed error information
+            let status = response.status();
+            let body = response.text().await?;
+            
+            println!("Pinecone IE search error: status={}, body={}", status, body);
+            
             let error_message = format!(
-                "Search request failed with status: {}",
-                response.status()
+                "Search request failed with status: {}. Response body: {}",
+                status, body
             );
             Err(error_message.into())
         }

@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use chrono::{DateTime, Utc, NaiveDateTime};
 use crate::models::models::{ChatMessage, ChatResponse, Conversation, ConversationListItem};
 use crate::services::openai::OpenAIService;
-use crate::services::pinecone::PineconeService;
+use crate::services::pinecone_ie::PineconeIEService;
 
 pub async fn start_chat_conversation(
     db: &PgPool,
@@ -72,7 +72,7 @@ pub async fn send_chat_message(
     conversation_id: Option<i32>,
     namespace_id: Option<i32>,
     openai: &OpenAIService,
-    pinecone: &PineconeService,
+    pinecone_ie: &PineconeIEService,
 ) -> Result<ChatResponse, (StatusCode, String)> {
     let conversation_id = conversation_id.ok_or_else(|| {
         (StatusCode::BAD_REQUEST, "Conversation ID is required".to_string())
@@ -164,7 +164,7 @@ pub async fn send_chat_message(
         &content,
         &chat.namespace_id.to_string(),
         1000,
-        pinecone
+        pinecone_ie
     )
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

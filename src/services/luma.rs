@@ -155,7 +155,7 @@ impl LumaService {
             conversation_id,
             namespace_id,
             &self.openai,
-            &self.pinecone
+            &self.pinecone_ie
         ).await
     }
 

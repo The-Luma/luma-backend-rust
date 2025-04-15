@@ -10,12 +10,14 @@ use async_openai::{
         ChatCompletionRequestAssistantMessageArgs,
         ChatCompletionFunctionsArgs,
         ChatCompletionRequestFunctionMessageArgs,
+        CreateEmbeddingResponse,
+        Embedding,
     }
 };
 use std::error::Error;
 use crate::config::Config;
 use serde_json::json;
-use crate::services::pinecone::PineconeService;
+use crate::services::pinecone_ie::PineconeIEService;
 use pinecone_sdk::models::Kind;
 
 #[derive(Clone)]
@@ -128,7 +130,7 @@ impl OpenAIService {
         last_message: &str,
         namespace_id: &str,
         max_tokens: u32,
-        pinecone_service: &PineconeService,
+        pinecone_service: &PineconeIEService,
     ) -> Result<String, Box<dyn Error>> {
         // Create the initial request with function definition
         let request = CreateChatCompletionRequestArgs::default()
@@ -184,35 +186,30 @@ impl OpenAIService {
                 // Parse the function arguments
                 let args: serde_json::Value = serde_json::from_str(&function_call.arguments)?;
                 let query = args["query"].as_str().ok_or("Missing query parameter")?;
-                let top_k = args["top_k"].as_i64().unwrap_or(3) as u32;
+                let top_k = args["top_k"].as_i64().unwrap_or(3) as i32;
 
                 // Get embedding for the query
                 let query_embedding = self.create_embedding(query).await?;
 
-                // Search Pinecone
-                let search_results = pinecone_service.search(
+                // Search Pinecone IE
+                let search_results = match pinecone_service.search(
                     namespace_id,
                     query_embedding,
                     top_k,
-                    None,
-                    true
-                ).await?;
+                    Some(query.to_string())
+                ).await {
+                    Ok(results) => results,
+                    Err(e) => {
+                        return Err(e);
+                    }
+                };
 
                 // Format the search results
                 let mut context = String::from("Here is the relevant information from the knowledge base:\n\n");
-                for (i, match_) in search_results.matches.iter().enumerate() {
-                    if let Some(metadata) = &match_.metadata {
-                        if let Some(content) = metadata.fields.get("content") {
-                            if let Some(kind) = &content.kind {
-                                match kind {
-                                    Kind::StringValue(text) => {
-                                        context.push_str(&format!("{}. {}\n\n", i + 1, text));
-                                    },
-                                    _ => continue, // Skip if not a string value
-                                }
-                            }
-                        }
-                    }
+                
+                // Access the hits directly from the search response
+                for (i, hit) in search_results.result.hits.iter().enumerate() {
+                    context.push_str(&format!("{}. {}\n\n", i + 1, hit.fields.text));
                 }
 
                 // Create a new message with the search results
