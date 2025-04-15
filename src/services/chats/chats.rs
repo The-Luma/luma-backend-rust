@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use chrono::{DateTime, Utc, NaiveDateTime};
 use crate::models::models::{ChatMessage, ChatResponse, Conversation, ConversationListItem};
 use crate::services::openai::OpenAIService;
+use crate::services::pinecone::PineconeService;
 
 pub async fn start_chat_conversation(
     db: &PgPool,
@@ -71,6 +72,7 @@ pub async fn send_chat_message(
     conversation_id: Option<i32>,
     namespace_id: Option<i32>,
     openai: &OpenAIService,
+    pinecone: &PineconeService,
 ) -> Result<ChatResponse, (StatusCode, String)> {
     let conversation_id = conversation_id.ok_or_else(|| {
         (StatusCode::BAD_REQUEST, "Conversation ID is required".to_string())
@@ -154,13 +156,18 @@ pub async fn send_chat_message(
     let mut chat_messages = messages.iter()
         .map(|m| (m.sender_type.clone(), m.content.clone()))
         .collect::<Vec<_>>();
-    chat_messages.push(("user".to_string(), content));
+    chat_messages.push(("user".to_string(), content.clone()));
 
-    // Get OpenAI response
-    let bot_response = openai.create_chat_completion(chat_messages, 1000)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to get bot response".to_string()))?;
+    // Get OpenAI response with vector search
+    let bot_response = openai.create_chat_completion_with_vector_search(
+        chat_messages,
+        &content,
+        &chat.namespace_id.to_string(),
+        1000,
+        pinecone
+    )
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     // Insert bot response
     let bot_message = sqlx::query_as!(
