@@ -1636,6 +1636,7 @@ dependencies = [
  "jsonwebtoken",
  "pdf-extract",
  "pinecone-sdk",
+ "reqwest",
  "serde",
  "serde_json",
  "sqlx",

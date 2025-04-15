@@ -3,7 +3,7 @@ use sqlx::PgPool;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc, NaiveDateTime};
 use crate::models::models::{Document, NamespaceDocument, DocumentResponse, DocumentListItem};
-use crate::services::pinecone::PineconeService;
+use crate::services::pinecone_ie::PineconeIEService;
 use crate::services::openai::OpenAIService;
 use crate::services::files::FileService;
 use uuid::Uuid;
@@ -28,7 +28,7 @@ pub async fn upload_document(
     namespace_id: i32,
     file_name: String,
     file_content: Vec<u8>,
-    pinecone: &PineconeService,
+    pinecone: &PineconeIEService,
     openai: &OpenAIService,
 ) -> Result<DocumentResponse, (StatusCode, String)> {
     // Verify namespace access
@@ -121,55 +121,23 @@ pub async fn upload_document(
     embedding_futures.sort_by(|a, b| a.0.cmp(&b.0));
     let embeddings: Vec<Vec<f32>> = embedding_futures.into_iter().map(|(_, emb)| emb).collect();
     
-    // Store embeddings in Pinecone in batches
-    let namespace_str = namespace_id.to_string();
-    let mut vec_ids = Vec::with_capacity(chunks_len);
-    
-    for batch_start in (0..chunks_len).step_by(BATCH_SIZE) {
-        let batch_end = (batch_start + BATCH_SIZE).min(chunks_len);
-        let mut batch_futures = Vec::with_capacity(batch_end - batch_start);
-        
-        for i in batch_start..batch_end {
-            let chunk_id = format!("{}-{}", document_id, i);
-            let embedding = embeddings[i].clone();
-            let chunk = chunks_arc[i].clone();
-            let namespace_str_clone = namespace_str.clone();
-            let pinecone_clone = pinecone.clone();
-            
-            let future = task::spawn(async move {
-                // Create metadata with the text content
-                let mut pinecone_metadata = Metadata::default();
-                pinecone_metadata.fields.insert("text".to_string(), Value {
-                    kind: Some(Kind::StringValue(chunk)),
-                });
-                
-                match pinecone_clone.upsert_document(&namespace_str_clone, &chunk_id, embedding, Some(pinecone_metadata)).await {
-                    Ok(_) => Ok((i, chunk_id)),
-                    Err(e) => Err(e.to_string())
-                }
-            });
-            
-            batch_futures.push(future);
-        }
-        
-        // Wait for this batch to complete before starting the next batch
-        let batch_results = join_all(batch_futures).await;
-        
-        // Process batch results
-        for result in batch_results {
-            match result {
-                Ok(Ok((i, chunk_id))) => vec_ids.push((i, chunk_id)),
-                Ok(Err(e)) => return Err((StatusCode::INTERNAL_SERVER_ERROR, 
-                                         format!("Failed to store embedding in vector database: {}", e))),
-                Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, 
-                                     format!("Task join error: {}", e))),
-            }
-        }
+    // Prepare documents for upsert
+    let mut documents = Vec::with_capacity(chunks_len);
+    for i in 0..chunks_len {
+        let chunk_id = format!("{}-{}", document_id, i);
+        let chunk = chunks_arc[i].clone();
+        documents.push((chunk_id, chunk));
     }
-    
-    // Sort vector IDs by chunk index to maintain order
-    vec_ids.sort_by(|a, b| a.0.cmp(&b.0));
-    let vec_ids: Vec<String> = vec_ids.into_iter().map(|(_, id)| id).collect();
+
+    // Upload to Pinecone IE
+    pinecone.upsert(&namespace_id.to_string(), documents)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to store in vector database: {}", e)))?;
+
+    // Generate vector IDs
+    let vec_ids: Vec<String> = (0..chunks_len)
+        .map(|i| format!("{}-{}", document_id, i))
+        .collect();
     
     // Start a database transaction for atomic operations
     let mut transaction = db.begin().await
@@ -257,7 +225,7 @@ pub async fn delete_document(
     user_id: i32,
     namespace_id: i32,
     document_id: i32,
-    pinecone: &PineconeService,
+    pinecone: &PineconeIEService,
 ) -> Result<String, (StatusCode, String)> {
     // Verify namespace access
     let has_access = sqlx::query!(

@@ -20,6 +20,7 @@ pub struct Config {
     // Pinecone configuration
     pub pinecone_api_key: String,
     pub pinecone_index_name: String,
+    pub pinecone_url: String,
     
     // OpenAI configuration
     pub openai_api_key: String,
@@ -45,6 +46,7 @@ impl Config {
             frontend_url: env::var("FRONTEND_URL")?,
             pinecone_api_key: env::var("BACKEND_PINECONE_API_KEY")?,
             pinecone_index_name: env::var("BACKEND_PINECONE_INDEX_NAME")?,
+            pinecone_url: env::var("BACKEND_PINECONE_URL")?,
             openai_api_key: env::var("BACKEND_OPENAI_API_KEY")?,
             openai_org_id: env::var("BACKEND_OPENAI_ORG_ID")?,
             openai_completion_model: env::var("BACKEND_OPENAI_COMPLETION_MODEL")?,
