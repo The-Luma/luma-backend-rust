@@ -130,7 +130,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(service);
 
     // Run it
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let addr = format!("0.0.0.0:{}", config.backend_port);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!(
         r#"
  _       __     __                             __           __
@@ -141,7 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "#
     );
     println!("-------------------------------------");
-    println!("Server running on http://0.0.0.0:3000");
+    println!("Server running on http://{}", addr);
     println!("-------------------------------------");
     axum::serve(listener, app).await?;
 

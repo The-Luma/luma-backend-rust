@@ -208,7 +208,7 @@ impl OpenAIService {
                     for (i, hit) in search_results.result.hits.iter().enumerate() {
                         context.push_str(&format!("{}. {}\n\n", i + 1, hit.fields.text));
                     }
-                    
+
                     // Add the assistant's message with tool calls
                     let assistant_message = ChatCompletionRequestAssistantMessageArgs::default()
                         .content(response_message.content.unwrap_or_default())

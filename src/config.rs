@@ -13,6 +13,7 @@ pub struct Config {
     
     // Server configuration
     pub frontend_url: String,
+    pub backend_port: u16,
     
     // Pinecone configuration
     pub pinecone_api_key: String,
@@ -37,6 +38,7 @@ impl Config {
             backend_db_connection: env::var("BACKEND_DB_CONNECTION")?,
             jwt_secret: env::var("BACKEND_JWT_SECRET")?,
             frontend_url: env::var("FRONTEND_URL")?,
+            backend_port: env::var("BACKEND_PORT").unwrap_or_else(|_| "3000".to_string()).parse()?,
             pinecone_api_key: env::var("BACKEND_PINECONE_API_KEY")?,
             pinecone_url: env::var("BACKEND_PINECONE_URL")?,
             openai_api_key: env::var("BACKEND_OPENAI_API_KEY")?,
