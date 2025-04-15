@@ -19,6 +19,7 @@ pub struct OpenAIService {
     completion_model: String,
     chat_model: String,
     embedding_model: String,
+    embedding_dimensions: u32,
 }
 
 impl OpenAIService {
@@ -40,6 +41,7 @@ impl OpenAIService {
             completion_model: config.openai_completion_model.clone(),
             chat_model: config.openai_chat_model.clone(),
             embedding_model: config.openai_embedding_model.clone(),
+            embedding_dimensions: config.openai_embedding_dimensions,
         })
     }
 
@@ -102,6 +104,7 @@ impl OpenAIService {
     pub async fn create_embedding(&self, input: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         let request = CreateEmbeddingRequestArgs::default()
             .model(&self.embedding_model)
+            .dimensions(self.embedding_dimensions)
             .input(input)
             .build()?;
 

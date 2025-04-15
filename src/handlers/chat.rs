@@ -1,8 +1,10 @@
 use axum::{
-    extract::{Path, State, Query, Extension},
+    extract::{Path, State, Query, Extension, Multipart},
+    extract::multipart::Field,
     Json,
     response::IntoResponse,
     http::StatusCode,
+    http::header,
 };
 use crate::services::luma::LumaService;
 use crate::models::models::{
@@ -15,10 +17,13 @@ use crate::models::models::{
     Namespace,
     NamespaceQuery,
     ShareNamespaceRequest,
-    RevokeNamespaceRequest
+    RevokeNamespaceRequest,
+    UploadDocumentRequest,
+    DocumentResponse
 };
 use chrono::{DateTime, Utc};
 use serde_json::json;
+use futures::StreamExt;
 
 /// Start a new chat conversation
 pub async fn start_chat(
@@ -158,5 +163,117 @@ pub async fn revoke_namespace_access(
     ).await {
         Ok(_) => (StatusCode::OK, Json(json!({ "message": "Namespace access revoked successfully" }))),
         Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
+/// Upload a document to a namespace
+pub async fn upload_document(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+    mut multipart: Multipart,
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    let mut file_name: Option<String> = None;
+    let mut file_content: Option<Vec<u8>> = None;
+
+    // Process multipart form data
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": format!("Failed to process form data: {}", e) })))
+    })? {
+        let name = field.name().unwrap_or("").to_string();
+        
+        match name.as_str() {
+            "file" => {
+                file_name = Some(field.file_name().unwrap_or("unnamed.pdf").to_string());
+                file_content = Some(field.bytes().await.map_err(|e| {
+                    (StatusCode::BAD_REQUEST, Json(json!({ "error": format!("Failed to read file: {}", e) })))
+                })?.to_vec());
+            },
+            _ => {}
+        }
+    }
+    
+    let file_name = file_name.ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": "file is required" })))
+    })?;
+    
+    let file_content = file_content.ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": "file content is required" })))
+    })?;
+
+    // Upload document
+    match service.upload_document(
+        user.id,
+        namespace_id,
+        file_name,
+        file_content,
+    ).await {
+        Ok(document) => Ok((StatusCode::OK, Json(json!({ "document": document })))),
+        Err((status, message)) => Err((status, Json(json!({ "error": message })))),
+    }
+}
+
+/// Delete a document from a namespace
+pub async fn delete_document(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path((namespace_id, document_id)): Path<(i32, i32)>,
+) -> impl IntoResponse {
+    match service.delete_document(user.id, namespace_id, document_id).await {
+        Ok(message) => (StatusCode::OK, Json(json!({ "message": message }))),
+        Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
+/// List documents in a namespace
+pub async fn list_documents(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+) -> impl IntoResponse {
+    match service.list_documents(user.id, namespace_id).await {
+        Ok(documents) => (StatusCode::OK, Json(json!({ "documents": documents }))),
+        Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
+/// Download a document from a namespace
+pub async fn download_document(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path((namespace_id, document_id)): Path<(i32, i32)>,
+) -> impl IntoResponse {
+    match service.download_document(user.id, namespace_id, document_id).await {
+        Ok((file_content, title, file_path)) => {
+            let extension = file_path.split('.').last().unwrap_or("pdf");
+            let content_type = match extension {
+                "pdf" => "application/pdf",
+                _ => "application/octet-stream",
+            };
+
+            // Create owned strings for the headers
+            let content_disposition = format!("attachment; filename=\"{}\"", title);
+            
+            // Use owned values in the headers array
+            let headers = [
+                (header::CONTENT_TYPE, content_type.to_string()),
+                (header::CONTENT_DISPOSITION, content_disposition),
+            ];
+
+            (StatusCode::OK, headers, file_content)
+        },
+        Err((status, message)) => {
+            // Create the error JSON value directly
+            let error_json = json!({ "error": message });
+            let error_bytes = serde_json::to_vec(&error_json).unwrap_or_default();
+            
+            // Use owned values for error headers
+            let headers = [
+                (header::CONTENT_TYPE, "application/json".to_string()),
+                (header::CONTENT_DISPOSITION, "inline".to_string()),
+            ];
+            
+            (status, headers, error_bytes)
+        },
     }
 }

@@ -261,4 +261,60 @@ pub struct ShareNamespaceRequest {
 #[derive(Debug, Deserialize)]
 pub struct RevokeNamespaceRequest {
     pub user_id: i32,
+}
+
+/// Document-related models
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Document {
+    pub id: i32,
+    pub name: String,
+    pub content: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NamespaceDocument {
+    pub id: i32,
+    pub namespace_id: i32,
+    pub document_id: i32,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UploadDocumentRequest {
+    pub namespace_id: i32,
+    pub file_name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocumentResponse {
+    pub id: i32,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub namespace_id: i32,
+    pub file_metadata: serde_json::Value,
+    pub is_public: bool,
+    pub type_: String,
+    pub chunks: ChunkInfo,
+    pub text_preview: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DocumentListItem {
+    pub id: i32,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub namespace_id: i32,
+    pub file_metadata: serde_json::Value,
+    pub is_public: bool,
+    pub type_: String,
+    pub user_id: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ChunkInfo {
+    pub count: usize,
+    pub vector_ids: Vec<String>,
+    pub embedding_dimension: usize,
 } 

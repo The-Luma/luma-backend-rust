@@ -1323,6 +1323,269 @@
 				}
 			],
 			"description": "Chat related endpoints"
+		},
+		{
+			"name": "documents",
+			"item": [
+				{
+					"name": "/documents/upload/{namespace_id}",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/documents/upload/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"upload",
+								"1"
+							]
+						},
+						"description": "Upload a document to a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/api/documents/upload/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"upload",
+										"1"
+									]
+								},
+								"description": "Upload a document to a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"document\": {\n        \"id\": 1,\n        \"name\": \"example.pdf\",\n        \"created_at\": \"2023-04-13T12:00:00Z\",\n        \"namespace_id\": 1\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "/documents/{namespace_id}",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/documents/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"1"
+							]
+						},
+						"description": "List all documents in a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1"
+									]
+								},
+								"description": "List all documents in a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"documents\": [\n        {\n            \"id\": 1,\n            \"name\": \"example.pdf\",\n            \"created_at\": \"2023-04-13T12:00:00Z\",\n            \"namespace_id\": 1,\n            \"file_metadata\": {\n                \"size_bytes\": 1024,\n                \"total_chunks\": 5,\n                \"storage_path\": \"uploads/1/example.pdf\",\n                \"original_filename\": \"example.pdf\"\n            },\n            \"is_public\": false,\n            \"type_\": \"pdf\",\n            \"user_id\": 1\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "/documents/{namespace_id}/{document_id}",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/documents/1/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"1",
+								"1"
+							]
+						},
+						"description": "Delete a document from a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1",
+										"1"
+									]
+								},
+								"description": "Delete a document from a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"message\": \"Document deleted successfully\"\n}"
+						}
+					]
+				},
+				{
+					"name": "/documents/{namespace_id}/{document_id}/download",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/documents/1/1/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"1",
+								"1",
+								"download"
+							]
+						},
+						"description": "Download a document from a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1/1/download",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1",
+										"1",
+										"download"
+									]
+								},
+								"description": "Download a document from a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "binary",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/pdf"
+								},
+								{
+									"key": "Content-Disposition",
+									"value": "attachment; filename=\"example.pdf\""
+								}
+							],
+							"cookie": [],
+							"body": "[Binary data]"
+						},
+						{
+							"name": "Error",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/documents/1/999/download",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"documents",
+										"1",
+										"999",
+										"download"
+									]
+								},
+								"description": "Download a document from a namespace. Requires authentication."
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Disposition",
+									"value": "inline"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": \"Document not found\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Document related endpoints"
 		}
 	],
 	"event": [

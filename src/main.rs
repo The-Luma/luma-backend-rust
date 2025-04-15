@@ -9,6 +9,8 @@ use axum::{
     middleware::from_fn_with_state,
     routing::{delete, get, post},
     Router,
+    extract::{State, Extension, Path},
+    response::IntoResponse,
 };
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
@@ -19,10 +21,14 @@ use crate::{
     config::Config,
     handlers::{
         admin_delete_user, check_admin_setup, create_admin, create_invitation,
-        delete_account, get_user_by_id, login, logout, me, refresh_token,
-        register_with_invitation, search_users, start_chat, send_message,
-        get_chat_history, list_conversations, delete_conversation,
-        create_namespace, list_namespaces, delete_namespace, share_namespace
+        delete_account, get_user_by_id, logout, me, refresh_token,
+        register_with_invitation, search_users,
+        auth::{login},
+        chat::{
+            start_chat, send_message, get_chat_history, list_conversations, delete_conversation,
+            create_namespace, list_namespaces, delete_namespace, share_namespace, revoke_namespace_access,
+            upload_document, delete_document, list_documents, download_document
+        },
     },
     services::{luma::LumaService, db::{init_db_pool, run_test_query}},
 };
@@ -40,7 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = init_db_pool(&config).await?;
     run_test_query(&pool).await?;
 
-    let service = LumaService::new(pool, config.jwt_secret, openai_service);
+    let service = LumaService::new(pool, config.jwt_secret, openai_service, pinecone_service);
 
     // Configure CORS
     let cors = CorsLayer::new()
@@ -89,7 +95,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/namespaces", get(list_namespaces))
         .route("/namespaces/{id}", delete(delete_namespace))
         .route("/namespaces/{id}/share", post(share_namespace))
-        .route("/namespaces/{id}/revoke", post(handlers::chat::revoke_namespace_access))
+        .route("/namespaces/{id}/revoke", post(revoke_namespace_access))
+        // Document routes
+        .route("/documents/upload/{namespace_id}", post(upload_document))
+        .route("/documents/{namespace_id}/{document_id}", delete(delete_document))
+        .route("/documents/{namespace_id}", get(list_documents))
+        .route("/documents/{namespace_id}/{document_id}/download", get(download_document))
         .layer(from_fn_with_state(
             service.clone(),
             crate::middleware::auth::check_if_auth,
