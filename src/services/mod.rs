@@ -5,5 +5,6 @@ pub mod documents;
 pub mod luma;
 pub mod openai;
 pub mod pinecone;
+pub mod pinecone_ie;
 pub mod db;
 pub mod files;

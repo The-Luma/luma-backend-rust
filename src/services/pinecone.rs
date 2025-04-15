@@ -1,6 +1,6 @@
 use pinecone_sdk::pinecone::{PineconeClient, PineconeClientConfig};
 use pinecone_sdk::models::{IndexModel, Metric, Vector, Value, Kind, Metadata, QueryResponse};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use crate::config::Config;
 
 #[derive(Debug, Clone)]
@@ -19,9 +19,14 @@ pub struct PineconeService {
 
 impl PineconeService {
     pub fn new(config: &Config) -> Result<Self, Box<dyn std::error::Error>> {
+        // Create a HashMap for additional headers
+        let mut additional_headers = HashMap::new();
+        additional_headers.insert("X-Pinecone-API-Version".to_string(), "2024-07".to_string());
+
         // Create Pinecone configuration
         let pinecone_config = PineconeClientConfig {
             api_key: Some(config.pinecone_api_key.clone()),
+            additional_headers: Some(additional_headers),
             ..Default::default()
         };
 

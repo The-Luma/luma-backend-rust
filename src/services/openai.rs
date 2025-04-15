@@ -8,10 +8,17 @@ use async_openai::{
         ChatCompletionRequestSystemMessageArgs,
         ChatCompletionRequestUserMessageArgs,
         ChatCompletionRequestAssistantMessageArgs,
+        ChatCompletionFunctionsArgs,
+        ChatCompletionRequestFunctionMessageArgs,
+        CreateEmbeddingResponse,
+        Embedding,
     }
 };
 use std::error::Error;
 use crate::config::Config;
+use serde_json::json;
+use crate::services::pinecone_ie::PineconeIEService;
+use pinecone_sdk::models::Kind;
 
 #[derive(Clone)]
 pub struct OpenAIService {
@@ -117,4 +124,138 @@ impl OpenAIService {
             .ok_or_else(|| "No embedding generated".into())
     }
 
+    pub async fn create_chat_completion_with_vector_search(
+        &self,
+        messages: Vec<(String, String)>,
+        last_message: &str,
+        namespace_id: &str,
+        max_tokens: u32,
+        pinecone_service: &PineconeIEService,
+    ) -> Result<String, Box<dyn Error>> {
+        // Create the initial request with function definition
+        let request = CreateChatCompletionRequestArgs::default()
+            .model(&self.chat_model)
+            .max_tokens(max_tokens)
+            .messages(messages.iter().map(|(role, content)| {
+                match role.to_lowercase().as_str() {
+                    "system" => Ok(ChatCompletionRequestSystemMessageArgs::default()
+                        .content(content.as_str())
+                        .build()?
+                        .into()),
+                    "user" => Ok(ChatCompletionRequestUserMessageArgs::default()
+                        .content(content.as_str())
+                        .build()?
+                        .into()),
+                    "assistant" => Ok(ChatCompletionRequestAssistantMessageArgs::default()
+                        .content(content.as_str())
+                        .build()?
+                        .into()),
+                    _ => Err("Invalid role. Must be 'system', 'user', or 'assistant'".into()),
+                }
+            }).collect::<Result<Vec<_>, Box<dyn Error>>>()?)
+            .functions([ChatCompletionFunctionsArgs::default()
+                .name("search_knowledge_base")
+                .description("Search the knowledge base for relevant information")
+                .parameters(json!({
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The search query to find relevant information",
+                        },
+                        "top_k": {
+                            "type": "integer",
+                            "description": "Number of results to return",
+                            "default": 10
+                        }
+                    },
+                    "required": ["query"],
+                }))
+                .build()?])
+            .function_call("auto")
+            .build()?;
+
+        let response = self.client.chat().create(request).await?;
+        let response_message = response.choices.first()
+            .ok_or("No response from OpenAI")?
+            .message.clone();
+
+        // If the model wants to call a function
+        if let Some(function_call) = response_message.function_call {
+            if function_call.name == "search_knowledge_base" {
+                // Parse the function arguments
+                let args: serde_json::Value = serde_json::from_str(&function_call.arguments)?;
+                let query = args["query"].as_str().ok_or("Missing query parameter")?;
+                let top_k = args["top_k"].as_i64().unwrap_or(3) as i32;
+
+                // Get embedding for the query
+                let query_embedding = self.create_embedding(query).await?;
+
+                // Search Pinecone IE
+                let search_results = match pinecone_service.search(
+                    namespace_id,
+                    query_embedding,
+                    top_k,
+                    Some(query.to_string())
+                ).await {
+                    Ok(results) => results,
+                    Err(e) => {
+                        return Err(e);
+                    }
+                };
+
+                // Format the search results
+                let mut context = String::from("Here is the relevant information from the knowledge base:\n\n");
+                
+                // Access the hits directly from the search response
+                for (i, hit) in search_results.result.hits.iter().enumerate() {
+                    context.push_str(&format!("{}. {}\n\n", i + 1, hit.fields.text));
+                }
+
+                // Create a new message with the search results
+                let mut new_messages = messages;
+                new_messages.push(("assistant".to_string(), response_message.content.unwrap_or_default()));
+                new_messages.push(("function".to_string(), context));
+                new_messages.push(("user".to_string(), last_message.to_string()));
+
+                // Get final response from the model
+                let final_request = CreateChatCompletionRequestArgs::default()
+                    .model(&self.chat_model)
+                    .max_tokens(max_tokens)
+                    .messages(new_messages.iter().map(|(role, content)| {
+                        match role.to_lowercase().as_str() {
+                            "system" => Ok(ChatCompletionRequestSystemMessageArgs::default()
+                                .content(content.as_str())
+                                .build()?
+                                .into()),
+                            "user" => Ok(ChatCompletionRequestUserMessageArgs::default()
+                                .content(content.as_str())
+                                .build()?
+                                .into()),
+                            "assistant" => Ok(ChatCompletionRequestAssistantMessageArgs::default()
+                                .content(content.as_str())
+                                .build()?
+                                .into()),
+                            "function" => Ok(ChatCompletionRequestFunctionMessageArgs::default()
+                                .content(content.as_str())
+                                .name("search_knowledge_base")
+                                .build()?
+                                .into()),
+                            _ => Err("Invalid role".into()),
+                        }
+                    }).collect::<Result<Vec<_>, Box<dyn Error>>>()?)
+                    .build()?;
+
+                let final_response = self.client.chat().create(final_request).await?;
+                return Ok(final_response.choices.first()
+                    .ok_or("No response from OpenAI")?
+                    .message.content
+                    .clone()
+                    .ok_or("No content in response")?);
+            }
+        }
+
+        // If no function call was made, return the original response
+        Ok(response_message.content.ok_or("No content in response")?)
+    }
 } 

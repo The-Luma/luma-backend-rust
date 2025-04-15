@@ -17,6 +17,7 @@ use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 use services::openai::OpenAIService;
 use services::pinecone::PineconeService;
+use services::pinecone_ie::PineconeIEService;
 use crate::{
     config::Config,
     handlers::{
@@ -43,10 +44,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut pinecone_service = PineconeService::new(&config)?;
     pinecone_service.check_connection(&config).await?;
 
+    let pinecone_ie_service = PineconeIEService::new(
+        config.pinecone_api_key.clone(),
+        config.pinecone_url.clone(),
+    );
+
     let pool = init_db_pool(&config).await?;
     run_test_query(&pool).await?;
 
-    let service = LumaService::new(pool, config.jwt_secret, openai_service, pinecone_service);
+    let service = LumaService::new(
+        pool,
+        config.jwt_secret,
+        openai_service,
+        pinecone_service,
+        pinecone_ie_service,
+    );
 
     // Configure CORS
     let cors = CorsLayer::new()
