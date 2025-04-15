@@ -193,4 +193,28 @@ impl PineconeService {
         }
         pinecone_metadata
     }
+
+    /// Delete vectors from Pinecone by their IDs
+    pub async fn delete_vectors(
+        &self,
+        namespace: &str,
+        vector_ids: &[String],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Get the index name and host from config
+        let index_config = self.index_config
+            .as_ref()
+            .ok_or("Pinecone index not initialized. Call initialize_index first.")?;
+
+        // Get the index client using the host URL
+        let mut index = self.client.index(&index_config.host).await?;
+
+        // Convert String slice to &str slice
+        let str_refs: Vec<&str> = vector_ids.iter().map(|s| s.as_str()).collect();
+
+        // Delete specific vectors using delete_by_id
+        index.delete_by_id(&str_refs, &namespace.into()).await?;
+        
+        println!("Successfully deleted {} vectors from namespace {}", vector_ids.len(), namespace);
+        Ok(())
+    }
 } 

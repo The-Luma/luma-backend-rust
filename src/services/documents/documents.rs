@@ -69,6 +69,11 @@ pub async fn upload_document(
     let chunks = FileService::split_text_into_chunks(&extracted_text, 1000);
     let chunks_len = chunks.len();
     
+    // Check if any text was extracted
+    if chunks_len == 0 {
+        return Err((StatusCode::BAD_REQUEST, "No text could be extracted from the document. Please ensure the document contains readable text.".to_string()));
+    }
+    
     // Generate a unique document ID
     let document_id = Uuid::new_v4().to_string();
     
@@ -242,10 +247,11 @@ pub async fn upload_document(
 /// Delete a document from a namespace
 /// 
 /// This function:
-/// 1. Verifies the user has access to the namespace
-/// 2. Deletes the namespace_document association
-/// 3. Deletes the document from the database
+/// 1. Verifies user has access to the namespace
+/// 2. Retrieves the document metadata from the database
+/// 3. Deletes the document from the file system
 /// 4. Deletes the document from the vector database
+/// 5. Deletes the document from the database
 pub async fn delete_document(
     db: &PgPool,
     user_id: i32,
@@ -253,15 +259,83 @@ pub async fn delete_document(
     document_id: i32,
     pinecone: &PineconeService,
 ) -> Result<String, (StatusCode, String)> {
-    // TODO: Get the storage_name from the database
-    let storage_name = "temp.pdf"; // This should come from the database
-    
+    // Verify namespace access
+    let has_access = sqlx::query!(
+        r#"
+        SELECT EXISTS (
+            SELECT 1
+            FROM namespace n
+            LEFT JOIN namespace_auth na ON n.id = na.namespace_id AND na.user_id = $1
+            WHERE n.id = $2
+            AND (
+                n.user_id = $1  -- User is the owner
+                OR na.auth_level >= 2  -- User has access level >= 2
+            )
+        ) as "exists!"
+        "#,
+        user_id,
+        namespace_id
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .exists;
+
+    if !has_access {
+        return Err((StatusCode::FORBIDDEN, "You do not have permission to delete documents from this namespace".to_string()));
+    }
+
+    // Get document metadata and vector IDs
+    let document_info = sqlx::query!(
+        r#"
+        SELECT d.file_path, nd.vec_id
+        FROM document d
+        JOIN namespace_doc nd ON d.id = nd.doc_id
+        WHERE nd.namespace_id = $1 AND d.id = $2
+        "#,
+        namespace_id,
+        document_id
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .ok_or_else(|| (StatusCode::NOT_FOUND, "Document not found".to_string()))?;
+
     // Delete the file using FileService
-    FileService::delete_file(namespace_id, storage_name)?;
-    
-    // TODO: Delete document from database
-    // TODO: Delete from vector database
-    
+    FileService::delete_file(namespace_id, &document_info.file_path)?;
+
+    // Delete vectors from Pinecone
+    let namespace_str = namespace_id.to_string();
+    pinecone.delete_vectors(&namespace_str, &document_info.vec_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, 
+                     format!("Failed to delete vectors from Pinecone: {}", e)))?;
+
+    // Delete document from database
+    sqlx::query!(
+        r#"
+        DELETE FROM namespace_doc
+        WHERE namespace_id = $1 AND doc_id = $2
+        "#,
+        namespace_id,
+        document_id
+    )
+    .execute(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Delete the document record
+    sqlx::query!(
+        r#"
+        DELETE FROM document
+        WHERE id = $1
+        "#,
+        document_id
+    )
+    .execute(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
     Ok("Document deleted successfully".to_string())
 }
 

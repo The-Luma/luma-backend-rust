@@ -27,6 +27,7 @@ pub struct Config {
     pub openai_completion_model: String,
     pub openai_chat_model: String,
     pub openai_embedding_model: String,
+    pub openai_embedding_dimensions: u32,
 }
 
 impl Config {
@@ -49,6 +50,7 @@ impl Config {
             openai_completion_model: env::var("BACKEND_OPENAI_COMPLETION_MODEL")?,
             openai_chat_model: env::var("BACKEND_OPENAI_CHAT_MODEL")?,
             openai_embedding_model: env::var("BACKEND_OPENAI_EMBEDDING_MODEL")?,
+            openai_embedding_dimensions: env::var("BACKEND_OPENAI_EMBEDDING_DIMENSIONS")?.parse()?,
         })
     }
 } 
