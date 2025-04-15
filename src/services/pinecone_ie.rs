@@ -42,6 +42,12 @@ pub struct Hit {
     fields: serde_json::Value,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeleteRequest {
+    ids: Vec<String>,
+    namespace: String,
+}
+
 #[derive(Clone)]
 pub struct PineconeIEService {
     client: Client,
@@ -148,5 +154,44 @@ impl PineconeIEService {
         }
 
         Ok(())
+    }
+
+    pub async fn delete_vectors(
+        &self,
+        namespace_id: &str,
+        vector_ids: &[String],
+    ) -> Result<(), Box<dyn Error>> {
+        let url = format!(
+            "{}/vectors/delete",
+            self.base_url
+        );
+
+        let request = DeleteRequest {
+            ids: vector_ids.to_vec(),
+            namespace: namespace_id.to_string(),
+        };
+
+        let response = self.client
+            .post(&url)
+            .header("Api-Key", &self.api_key)
+            .header("Content-Type", "application/json")
+            .header("X-Pinecone-API-Version", "2025-01")
+            .json(&request)
+            .send()
+            .await?;
+
+        if response.status() == StatusCode::OK {
+            Ok(())
+        } else {
+            // Get the response body for more detailed error information
+            let status = response.status();
+            let body = response.text().await?;
+            
+            let error_message = format!(
+                "Delete vectors request failed with status: {}. Response body: {}",
+                status, body
+            );
+            Err(error_message.into())
+        }
     }
 }

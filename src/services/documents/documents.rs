@@ -106,41 +106,17 @@ pub async fn upload_document(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    // Create a vector to store chunk document IDs
-    let mut chunk_document_ids = Vec::with_capacity(chunks_len);
+    // Create a vector to store chunk IDs and documents for Pinecone
+    let mut chunk_ids = Vec::with_capacity(chunks_len);
     let mut documents_for_pinecone = Vec::with_capacity(chunks_len);
     
-    // Create a document record for each chunk
+    // Process each chunk
     for i in 0..chunks_len {
         let chunk_id = format!("{}-{}", parent_document_id, i);
         let chunk = chunks[i].clone();
         
-        // Insert chunk document
-        let chunk_document = sqlx::query!(
-            r#"
-            INSERT INTO document (user_id, title, file_path, file_metadata, type, is_public, uploaded_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id
-            "#,
-            user_id,
-            format!("{} (Chunk {})", file_name, i + 1),
-            format!("{}-chunk-{}", storage_name, i),
-            serde_json::json!({
-                "parent_document_id": parent_document_id,
-                "chunk_index": i,
-                "total_chunks": chunks_len,
-                "original_filename": file_name
-            }),
-            "chunk",
-            false,
-            Utc::now().naive_utc()
-        )
-        .fetch_one(&mut *transaction)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        
-        // Store the chunk document ID
-        chunk_document_ids.push(chunk_document.id);
+        // Store the chunk ID
+        chunk_ids.push(chunk_id.clone());
         
         // Add to Pinecone documents
         documents_for_pinecone.push((chunk_id, chunk));
@@ -156,7 +132,7 @@ pub async fn upload_document(
         }
     }
 
-    // Create namespace_document association for the parent document
+    // Create namespace_doc association for the parent document with all chunk IDs
     sqlx::query!(
         r#"
         INSERT INTO namespace_doc (namespace_id, doc_id, vec_id)
@@ -164,27 +140,11 @@ pub async fn upload_document(
         "#,
         namespace_id,
         parent_document.id,
-        &chunk_document_ids.iter().map(|id| id.to_string()).collect::<Vec<String>>()
+        &chunk_ids
     )
     .execute(&mut *transaction)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    
-    // Create namespace_document associations for each chunk
-    for chunk_id in &chunk_document_ids {
-        sqlx::query!(
-            r#"
-            INSERT INTO namespace_doc (namespace_id, doc_id, vec_id)
-            VALUES ($1, $2, $3)
-            "#,
-            namespace_id,
-            chunk_id,
-            &[format!("{}-{}", parent_document_id, chunk_id)]
-        )
-        .execute(&mut *transaction)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    }
     
     // Commit the transaction
     transaction.commit().await
@@ -206,7 +166,7 @@ pub async fn upload_document(
         type_: parent_document.r#type,
         chunks: ChunkInfo {
             count: chunks_len,
-            vector_ids: chunk_document_ids.iter().map(|id| id.to_string()).collect(),
+            vector_ids: chunk_ids,
             embedding_dimension: 0, // No embeddings are created with the new service
         },
         text_preview: if chunks_len == 0 {
@@ -274,75 +234,25 @@ pub async fn delete_document(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
     .ok_or_else(|| (StatusCode::NOT_FOUND, "Document not found".to_string()))?;
 
-    // Extract parent document ID from metadata
-    let parent_document_id = document_info.file_metadata
-        .get("parent_document_id")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-
     // Delete the file using FileService
     FileService::delete_file(namespace_id, &document_info.file_path)?;
 
     // Delete vectors from Pinecone
     let namespace_str = namespace_id.to_string();
-    //TODO
-    // pinecone.delete_vectors(&namespace_str, &document_info.vec_id)
-    //     .await
-    //     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR,
-    //                  format!("Failed to delete vectors from Pinecone: {}", e)))?;
+    let vec_ids = document_info.vec_id;
+    
+    if !vec_ids.is_empty() {
+        pinecone.delete_vectors(&namespace_str, &vec_ids)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR,
+                         format!("Failed to delete vectors from Pinecone: {}", e)))?;
+    }
 
     // Start a transaction for atomic operations
     let mut transaction = db.begin().await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    // If this is a parent document, delete all associated chunk documents
-    if parent_document_id.is_empty() {
-        // Find all chunk documents associated with this parent
-        let chunk_documents = sqlx::query!(
-            r#"
-            SELECT d.id, d.file_path
-            FROM document d
-            WHERE d.file_metadata->>'parent_document_id' = $1
-            "#,
-            document_id.to_string()
-        )
-        .fetch_all(&mut *transaction)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        // Delete each chunk document
-        for chunk in chunk_documents {
-            // Delete the chunk file
-            FileService::delete_file(namespace_id, &chunk.file_path)?;
-
-            // Delete namespace_doc association for the chunk
-            sqlx::query!(
-                r#"
-                DELETE FROM namespace_doc
-                WHERE namespace_id = $1 AND doc_id = $2
-                "#,
-                namespace_id,
-                chunk.id
-            )
-            .execute(&mut *transaction)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-            // Delete the chunk document
-            sqlx::query!(
-                r#"
-                DELETE FROM document
-                WHERE id = $1
-                "#,
-                chunk.id
-            )
-            .execute(&mut *transaction)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        }
-    }
-
-    // Delete namespace_doc association for the main document
+    // Delete namespace_doc association for the document
     sqlx::query!(
         r#"
         DELETE FROM namespace_doc
