@@ -36,13 +36,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let openai_service = OpenAIService::new(&config)?;
     openai_service.check_connection().await?;
+    println!("Using OpenAI model: {}", config.openai_chat_model);
+    println!("-------------------------------------");
 
-
-
-    let pinecone_ie_service = PineconeIEService::new(
+    println!("Testing Pinecone connection...");
+    
+    let mut pinecone_ie_service = PineconeIEService::new(
         config.pinecone_api_key.clone(),
-        config.pinecone_url.clone(),
+        config.pinecone_index.clone(),
     );
+    
+    pinecone_ie_service.initialize().await?;
+    println!("Successfully connected to Pinecone");
+    println!("-------------------------------------");
 
     let pool = init_db_pool(&config).await?;
     run_test_query(&pool).await?;

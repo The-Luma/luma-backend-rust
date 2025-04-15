@@ -69,20 +69,66 @@ pub struct DeleteRequest {
     namespace: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexInfo {
+    pub name: String,
+    pub host: String,
+    pub status: IndexStatus,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexStatus {
+    pub ready: bool,
+    pub state: String,
+}
+
 #[derive(Clone)]
 pub struct PineconeIEService {
     client: Client,
     base_url: String,
     api_key: String,
+    index_name: String,
 }
 
 impl PineconeIEService {
-    pub fn new(api_key: String, base_url: String) -> Self {
+    pub fn new(api_key: String, index_name: String) -> Self {
         Self {
             client: Client::new(),
-            base_url,
+            base_url: String::new(), // Will be set when fetching index info
             api_key,
+            index_name,
         }
+    }
+
+    pub async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+        // Fetch index info to get the host URL
+        let url = format!(
+            "https://api.pinecone.io/indexes/{}",
+            self.index_name
+        );
+        
+        let response = self.client
+            .get(&url)
+            .header("Api-Key", &self.api_key)
+            .header("X-Pinecone-API-Version", "2025-01")
+            .send()
+            .await?;
+        
+        if response.status() != StatusCode::OK {
+            return Err(format!(
+                "Failed to fetch index info: {}",
+                response.text().await?
+            ).into());
+        }
+        
+        let index_info: IndexInfo = response.json().await?;
+        
+        // Set the base URL using the host from the index info
+        self.base_url = format!("https://{}", index_info.host);
+        
+        println!("Pinecone index host: {}", self.base_url);
+        
+        Ok(())
     }
 
     pub async fn search(
