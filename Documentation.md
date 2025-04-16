@@ -1,5 +1,3 @@
-I'll create comprehensive documentation for the application. I'll structure it in different sections for clarity.
-
 # Luma Backend Documentation
 
 ## Table of Contents
