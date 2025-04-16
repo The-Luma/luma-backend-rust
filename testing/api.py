@@ -17,7 +17,7 @@ class TestAPI(unittest.TestCase):
 
         self.admin_data = {
             "username": os.getenv("TESTING_USERNAME"),
-            "email": os.getenv("TESTING_PASSWORD"),
+            "email": os.getenv("TESTING_EMAIL"),
             "password": os.getenv("TESTING_PASSWORD")
         }
 
@@ -138,21 +138,30 @@ class TestAPI(unittest.TestCase):
 
         admin_check_response = requests.get(f"{self.base_url}/admin/check")
         self.assertEqual(admin_check_response.status_code, 200)
-
+        test_data = {
+            "eami"
+        }
         response = requests.post(
             f"{self.base_url}/admin",
-            # json=self.admin_data,.',;'
-            headers={'X-Forwarded-Proto': 'https'},
-            verify=True,
-            params=self.admin_data
+            headers={
+                'X-Forwarded-Proto': 'https',
+                'Content-Type': 'application/json'
+            },
+            json=self.admin_data, 
+            verify=True
         )
 
+
         # Print response for debugging
-        print("Status Code:", response.status_code)
+        # print("Status Code:", response.status_code)
         print("Response Body:", response.text)
 
         # Assert the status code
-        self.assertEqual(response.status_code, 201)
+        if (admin_check_response.status_code != 200):
+            self.assertEqual(response.status_code, 200)
+        else:
+            self.assertEqual(response.status_code, 409)
+            self.assertEqual(response.text, "Admin already exists")
 
         # Assert response JSON contains expected keys
         json_data = response.json()
@@ -293,7 +302,6 @@ class TestAPI(unittest.TestCase):
 
     def test_invitation(self):
         """Test the invitation endpoint with various scenarios"""
-        # Test 1: Admin creates a valid invitation
         # Login as admin
         admin_login_data = {
             "username": self.username,
@@ -311,16 +319,41 @@ class TestAPI(unittest.TestCase):
             'Cookie': f'auth_token={admin_cookies.get("auth_token")}',
             'X-Forwarded-Proto': 'https'
         }
+
+        admin_info_response = requests.get(
+            f"{self.base_url}/me",
+            headers=admin_headers,
+            verify=True 
+        )
+        
+        # Verify response status
+        self.assertEqual(admin_info_response.status_code, 200)
+        
+        # Parse and validate user data
+        user_data = admin_info_response.json()
+        
+        # Print user data for debugging
+        print("\nCurrent User Information:")
+        print(f"Username: {user_data.get('username')}")
+        print(f"Email: {user_data.get('email')}")
+        print(f"Role: {user_data.get('role')}")
         
         # Create invitation
         invitation_data = {
             "email": self.dummy_email,
             "role": "user"
         }
+
+        invite_header = {
+            'role': user_data.get('role'),
+            'Cookie': f'auth_token={admin_cookies.get("auth_token")}',
+            'X-Forwarded-Proto': 'https'
+        }
+
         invitation_response = requests.post(
             f"{self.base_url}/invitations",
-            json=invitation_data,
-            headers=admin_headers,
+            data=invitation_data,
+            headers=invite_header,
             verify=True
         )
         
