@@ -1,4 +1,3 @@
-```markdown
 # Luma Backend
 
 
