@@ -1,5 +1,5 @@
 use axum::{
-    extract::{State, Path, Query},
+    extract::{State, Path, Query, Extension},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -9,6 +9,7 @@ use validator::Validate;
 use crate::handlers::error_response;
 use crate::models::models::{
     UserResponse, DeleteAccountRequest, SearchUsersQuery, SearchUsersResponse,
+    ChangeUsernameRequest, ChangePasswordRequest, SuccessResponse,
 };
 
 use crate::services::luma::LumaService;
@@ -170,4 +171,36 @@ pub async fn delete_account(
 
     // Return success response with cleared cookies
     Ok((jar, StatusCode::NO_CONTENT).into_response())
+}
+
+pub async fn change_username(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Json(req): Json<ChangeUsernameRequest>,
+) -> Result<Json<SuccessResponse>, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .change_username(user.id, req)
+        .await
+        .map_err(|(status, error)| error_response(status, error))?;
+
+    Ok(Json(SuccessResponse {
+        success: true,
+        message: "Username updated successfully".to_string(),
+    }))
+}
+
+pub async fn change_password(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Json(req): Json<ChangePasswordRequest>,
+) -> Result<Json<SuccessResponse>, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .change_password(user.id, req)
+        .await
+        .map_err(|(status, error)| error_response(status, error))?;
+
+    Ok(Json(SuccessResponse {
+        success: true,
+        message: "Password updated successfully".to_string(),
+    }))
 }

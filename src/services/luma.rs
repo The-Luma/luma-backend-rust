@@ -10,7 +10,8 @@ use crate::models::models::{
     InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
     ChatResponse, Conversation, ConversationListItem, Namespace,
-    DocumentResponse, DocumentListItem
+    DocumentResponse, DocumentListItem, NamespaceAccessResponse,
+    ChangeUsernameRequest, ChangePasswordRequest,
 };
 use crate::services::auth;
 use crate::services::users;
@@ -128,6 +129,14 @@ impl LumaService {
         users::delete::admin_delete_user(&self, target_user_id).await
     }
 
+    pub async fn change_username(&self, user_id: i32, req: ChangeUsernameRequest) -> Result<(), (StatusCode, String)> {
+        users::update::change_username(self.db(), user_id, req).await
+    }
+
+    pub async fn change_password(&self, user_id: i32, req: ChangePasswordRequest) -> Result<(), (StatusCode, String)> {
+        users::update::change_password(self.db(), user_id, req).await
+    }
+
     // CHAT METHODS
     pub async fn start_chat_conversation(&self, user_id: i32, namespace_id: Option<i32>) -> Result<Conversation, (StatusCode, String)> {
         chats::chats::start_chat_conversation(&self.db, user_id, namespace_id).await
@@ -180,6 +189,19 @@ impl LumaService {
 
     pub async fn revoke_namespace_access(&self, owner_id: i32, namespace_id: i32, target_user_id: i32,) -> Result<(), (StatusCode, String)> {
         namespaces::revoke_namespace_access(&self.db,owner_id, namespace_id, target_user_id,).await
+    }
+
+    pub async fn get_namespace_access_list(&self, user_id: i32, namespace_id: i32) -> Result<Vec<NamespaceAccessResponse>, (StatusCode, String)> {
+        namespaces::get_namespace_access_list(&self.db, user_id, namespace_id).await
+    }
+
+    pub async fn get_user_namespace_access_level(
+        &self,
+        db: &PgPool,
+        user_id: i32,
+        namespace_id: i32,
+    ) -> Result<i32, (StatusCode, String)> {
+        namespaces::get_user_namespace_access_level(db, user_id, namespace_id).await
     }
 
     // DOCUMENT METHODS
