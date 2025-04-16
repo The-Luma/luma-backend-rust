@@ -1,9 +1,11 @@
 # Luma Backend
 
 
-[Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)](https://www.rust-lang.org/)
-[License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[Docker](https://img.shields.io/badge/docker-supported-blue.svg)](https://www.docker.com/)
+[Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)(https://www.rust-lang.org/)
+\
+[License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)(https://www.gnu.org/licenses/agpl-3.0)
+\
+[Docker](https://img.shields.io/badge/docker-supported-blue.svg)(https://www.docker.com/)
 
 *A powerful, AI-driven document management and chat system built with Rust*
 
@@ -110,15 +112,15 @@ PINECONE_INDEX=your-index-name
 
 ```
 src/
-├── handlers/        # API endpoint handlers
-├── models/         # Data models and schemas
-├── services/       # Business logic
-│   ├── auth/      # Authentication services
-│   ├── chat/      # Chat services
-│   └── documents/ # Document processing
-├── middleware/     # Request middleware
-├── config.rs       # Configuration management
-└── main.rs        # Application entry point
+├── handlers/           # API endpoint handlers
+├── models/             # Data models and schemas
+├── services/           # Business logic
+│   ├── auth/           # Authentication services
+│   ├── chat/           # Chat services
+│   └── documents/      # Document processing
+├── middleware/         # Request middleware
+├── config.rs           # Configuration management
+└── main.rs             # Application entry point
 ```
 
 ### Running Tests
@@ -199,12 +201,12 @@ For the full license text, see the [LICENSE](LICENSE) file or visit [GNU AGPL-3.
 
 ### Production Checklist
 
-- [ ] Set secure environment variables
-- [ ] Configure HTTPS
-- [ ] Set up database backups
-- [ ] Configure logging
-- [ ] Set up monitoring
-- [ ] Review security settings
+-  Set secure environment variables
+-  Configure HTTPS
+-  Set up database backups
+-  Configure logging
+-  Set up monitoring
+-  Review security settings
 
 ##  Status
 
@@ -224,5 +226,3 @@ For the full license text, see the [LICENSE](LICENSE) file or visit [GNU AGPL-3.
 [Report Bug](https://github.com/your-org/luma-backend-rust/issues) • [Request Feature](https://github.com/your-org/luma-backend-rust/issues)
 
 </div>
-```
-
