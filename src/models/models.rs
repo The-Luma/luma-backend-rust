@@ -246,6 +246,13 @@ pub struct Namespace {
     pub auth_level: Option<i32>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct NamespaceAccessResponse {
+    pub user: UserResponse,
+    pub auth_level: i32,
+    pub granted_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct NamespaceQuery {
     pub include_public: Option<bool>,

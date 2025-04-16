@@ -157,6 +157,18 @@ pub async fn revoke_namespace_access(
     }
 }
 
+/// Get list of users with access to a namespace
+pub async fn get_namespace_access_list(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+) -> impl IntoResponse {
+    match service.get_namespace_access_list(user.id, namespace_id).await {
+        Ok(access_list) => (StatusCode::OK, Json(json!({ "access_list": access_list }))),
+        Err((status, message)) => (status, Json(json!({ "error": message }))),
+    }
+}
+
 /// Upload a document to a namespace
 pub async fn upload_document(
     State(service): State<LumaService>,

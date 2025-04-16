@@ -1,7 +1,7 @@
+use crate::models::models::{Namespace, UserResponse, NamespaceAccessResponse};
 use sqlx::PgPool;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
-use crate::models::models::{Namespace};
 
 pub async fn create_namespace(
     db: &PgPool,
@@ -343,4 +343,94 @@ pub async fn revoke_namespace_access(
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(())
+}
+
+pub async fn get_namespace_access_list(
+    db: &PgPool,
+    user_id: i32,
+    namespace_id: i32,
+) -> Result<Vec<NamespaceAccessResponse>, (StatusCode, String)> {
+    // Verify namespace ownership or access
+    sqlx::query!(
+        r#"
+        SELECT n.id, n.user_id, n.is_public
+        FROM namespace n
+        LEFT JOIN namespace_auth na ON n.id = na.namespace_id AND na.user_id = $2
+        WHERE (n.id = $1 AND n.user_id = $2)  -- Check direct ownership
+           OR (n.id = $1 AND na.user_id = $2 AND na.auth_level >= 1)  -- Check access level
+        "#,
+        namespace_id,
+        user_id
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .ok_or_else(|| (StatusCode::NOT_FOUND, "Namespace not found or you do not have permission".to_string()))?;
+
+    // Get all users with access to the namespace
+    let access_list = sqlx::query!(
+        r#"
+        WITH namespace_users AS (
+            -- Get the owner
+            SELECT 
+                u.id as user_id,
+                u.username,
+                u.email,
+                u.role,
+                3 as auth_level,
+                n.created_at as granted_at
+            FROM namespace n
+            JOIN users u ON n.user_id = u.id
+            WHERE n.id = $1
+            
+            UNION
+            
+            -- Get users with access
+            SELECT 
+                u.id as user_id,
+                u.username,
+                u.email,
+                u.role,
+                na.auth_level,
+                n.created_at as granted_at
+            FROM namespace_auth na
+            JOIN users u ON na.user_id = u.id
+            JOIN namespace n ON na.namespace_id = n.id
+            WHERE na.namespace_id = $1
+        )
+        SELECT 
+            user_id,
+            username,
+            email,
+            role,
+            auth_level,
+            granted_at
+        FROM namespace_users
+        WHERE user_id IS NOT NULL 
+          AND username IS NOT NULL 
+          AND email IS NOT NULL 
+          AND role IS NOT NULL 
+          AND auth_level IS NOT NULL
+          AND granted_at IS NOT NULL
+        ORDER BY auth_level DESC, username ASC
+        "#,
+        namespace_id
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(access_list
+        .into_iter()
+        .map(|row| NamespaceAccessResponse {
+            user: UserResponse {
+                id: row.user_id.expect("User ID cannot be null"),
+                username: row.username.expect("Username cannot be null"),
+                email: row.email.expect("Email cannot be null"),
+                role: row.role.expect("Role cannot be null"),
+            },
+            auth_level: row.auth_level.expect("Auth level cannot be null"),
+            granted_at: DateTime::from_naive_utc_and_offset(row.granted_at.expect("Granted at cannot be null"), Utc),
+        })
+        .collect())
 } 

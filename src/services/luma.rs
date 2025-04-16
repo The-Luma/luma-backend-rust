@@ -10,7 +10,7 @@ use crate::models::models::{
     InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
     ChatResponse, Conversation, ConversationListItem, Namespace,
-    DocumentResponse, DocumentListItem
+    DocumentResponse, DocumentListItem, NamespaceAccessResponse
 };
 use crate::services::auth;
 use crate::services::users;
@@ -180,6 +180,10 @@ impl LumaService {
 
     pub async fn revoke_namespace_access(&self, owner_id: i32, namespace_id: i32, target_user_id: i32,) -> Result<(), (StatusCode, String)> {
         namespaces::revoke_namespace_access(&self.db,owner_id, namespace_id, target_user_id,).await
+    }
+
+    pub async fn get_namespace_access_list(&self, user_id: i32, namespace_id: i32) -> Result<Vec<NamespaceAccessResponse>, (StatusCode, String)> {
+        namespaces::get_namespace_access_list(&self.db, user_id, namespace_id).await
     }
 
     // DOCUMENT METHODS
