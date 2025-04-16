@@ -7,7 +7,7 @@ mod config;
 use axum::{
     http::{header, Method},
     middleware::from_fn_with_state,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router
 };
 
@@ -26,6 +26,9 @@ use crate::{
             create_namespace, list_namespaces, delete_namespace, share_namespace, revoke_namespace_access,
             upload_document, delete_document, list_documents, download_document, get_namespace_access_list,
             get_user_namespace_access_level
+        },
+        users::{
+            change_username,
         },
     },
     services::{luma::LumaService, db::{init_db_pool, run_test_query}},
@@ -93,7 +96,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Protected routes (any authenticated user)
     let protected_routes = Router::new()
         .route("/me", get(me))
-        .route("/me", delete(delete_account))
+        .route("/account", delete(delete_account))
+        .route("/account/username", put(change_username))
         .route("/logout", post(logout))
         .route("/users", get(search_users))
         .route("/users/{id}", get(get_user_by_id))

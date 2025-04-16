@@ -595,7 +595,7 @@
 								"1"
 							]
 						},
-						"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
+						"description": "Admin endpoint to delete a user account. Requires admin role."
 					},
 					"response": [
 						{
@@ -614,14 +614,146 @@
 										"1"
 									]
 								},
-								"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
+								"description": "Admin endpoint to delete a user account. Requires admin role."
 							},
 							"status": "No Content",
 							"code": 204,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [],
 							"cookie": [],
 							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/account/username",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"new_username\": \"new_username\",\n    \"password\": \"current_password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/username",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"username"
+							]
+						},
+						"description": "Change the username of the authenticated user. Requires password verification for security."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_username\": \"new_username\",\n    \"password\": \"current_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/username",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"username"
+									]
+								},
+								"description": "Change the username of the authenticated user. Requires password verification for security."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Username updated successfully\"\n}"
+						},
+						{
+							"name": "Error - Invalid Password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_username\": \"new_username\",\n    \"password\": \"wrong_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/username",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"username"
+									]
+								},
+								"description": "Change the username of the authenticated user. Requires password verification for security."
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Invalid password\"\n}"
+						},
+						{
+							"name": "Error - Username Already Taken",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_username\": \"existing_username\",\n    \"password\": \"current_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/username",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"username"
+									]
+								},
+								"description": "Change the username of the authenticated user. Requires password verification for security."
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Username already taken\"\n}"
 						}
 					]
 				},

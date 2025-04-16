@@ -161,6 +161,15 @@ pub struct DeleteAccountRequest {
     pub password: String,
 }
 
+/// Request payload for changing username
+#[derive(Debug, Deserialize, Validate)]
+pub struct ChangeUsernameRequest {
+    #[validate(length(min = 3, max = 50, message = "Username must be between 3 and 50 characters"))]
+    pub new_username: String,
+    #[validate(length(min = 1, message = "Password is required"))]
+    pub password: String,
+}
+
 /// Request payload for searching users
 #[derive(Debug, Deserialize)]
 pub struct SearchUsersQuery {

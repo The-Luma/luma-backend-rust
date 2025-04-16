@@ -10,7 +10,8 @@ use crate::models::models::{
     InvitationResponse, LoginRequest, RegisterWithInvitationRequest,
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
     ChatResponse, Conversation, ConversationListItem, Namespace,
-    DocumentResponse, DocumentListItem, NamespaceAccessResponse
+    DocumentResponse, DocumentListItem, NamespaceAccessResponse,
+    ChangeUsernameRequest,
 };
 use crate::services::auth;
 use crate::services::users;
@@ -126,6 +127,10 @@ impl LumaService {
 
     pub async fn admin_delete_user(&self, target_user_id: i32) -> Result<(), (StatusCode, String)> {
         users::delete::admin_delete_user(&self, target_user_id).await
+    }
+
+    pub async fn change_username(&self, user_id: i32, req: ChangeUsernameRequest) -> Result<(), (StatusCode, String)> {
+        users::update::change_username(self.db(), user_id, req).await
     }
 
     // CHAT METHODS
