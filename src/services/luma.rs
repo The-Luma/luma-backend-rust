@@ -186,6 +186,15 @@ impl LumaService {
         namespaces::get_namespace_access_list(&self.db, user_id, namespace_id).await
     }
 
+    pub async fn get_user_namespace_access_level(
+        &self,
+        db: &PgPool,
+        user_id: i32,
+        namespace_id: i32,
+    ) -> Result<i32, (StatusCode, String)> {
+        namespaces::get_user_namespace_access_level(db, user_id, namespace_id).await
+    }
+
     // DOCUMENT METHODS
     pub async fn upload_document(&self, user_id: i32, namespace_id: i32, file_name: String,file_content: Vec<u8>,) -> Result<DocumentResponse, (StatusCode, String)> {
         documents::upload_document(&self.db, user_id, namespace_id, file_name, file_content, &self.pinecone_ie).await

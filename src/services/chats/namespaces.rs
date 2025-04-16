@@ -433,4 +433,33 @@ pub async fn get_namespace_access_list(
             granted_at: DateTime::from_naive_utc_and_offset(row.granted_at.expect("Granted at cannot be null"), Utc),
         })
         .collect())
+}
+
+pub async fn get_user_namespace_access_level(
+    db: &PgPool,
+    user_id: i32,
+    namespace_id: i32,
+) -> Result<i32, (StatusCode, String)> {
+    let access_level = sqlx::query!(
+        r#"
+        SELECT 
+            CASE 
+                WHEN n.user_id = $1 THEN 3  -- Owner has full access (level 3)
+                WHEN na.auth_level IS NOT NULL THEN na.auth_level  -- User with explicit access
+                WHEN n.is_public = true THEN 1  -- Public namespace gives read access (level 1)
+                ELSE 0  -- No access
+            END as access_level
+        FROM namespace n
+        LEFT JOIN namespace_auth na ON n.id = na.namespace_id AND na.user_id = $1
+        WHERE n.id = $2
+        "#,
+        user_id,
+        namespace_id
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    .ok_or_else(|| (StatusCode::NOT_FOUND, "Namespace not found".to_string()))?;
+
+    Ok(access_level.access_level.unwrap_or(0))
 } 

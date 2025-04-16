@@ -280,3 +280,20 @@ pub async fn download_document(
         },
     }
 }
+
+pub async fn get_user_namespace_access_level(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Path(namespace_id): Path<i32>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let access_level = service
+        .get_user_namespace_access_level(&service.db(), user.id, namespace_id)
+        .await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "data": {
+            "access_level": access_level
+        }
+    })))
+}

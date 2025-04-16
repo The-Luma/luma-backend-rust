@@ -1098,6 +1098,79 @@
 							"body": "{\n    \"access_list\": [\n        {\n            \"user\": {\n                \"id\": 1,\n                \"username\": \"admin\",\n                \"email\": \"admin@example.com\",\n                \"role\": \"admin\"\n            },\n            \"auth_level\": 3,\n            \"granted_at\": \"2024-04-16T10:00:00Z\"\n        },\n        {\n            \"user\": {\n                \"id\": 2,\n                \"username\": \"user1\",\n                \"email\": \"user1@example.com\",\n                \"role\": \"user\"\n            },\n            \"auth_level\": 1,\n            \"granted_at\": \"2024-04-16T11:00:00Z\"\n        }\n    ]\n}"
 						}
 					]
+				},
+				{
+					"name": "/namespaces/{nameSpaceId}/access-level",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/namespaces/16/access-level",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces",
+								"16",
+								"access-level"
+							]
+						},
+						"description": "Get the access level of the authenticated user for a specific namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/16/access-level",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"16",
+										"access-level"
+									]
+								},
+								"description": "Get the access level of the authenticated user for a specific namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"access_level\": 2\n    }\n}"
+						},
+						{
+							"name": "Error - Namespace Not Found",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/999/access-level",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"999",
+										"access-level"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Namespace not found\"\n}"
+						}
+					]
 				}
 			],
 			"description": "Namespace related endpoints"

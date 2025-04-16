@@ -24,7 +24,8 @@ use crate::{
         chat::{
             start_chat, send_message, get_chat_history, list_conversations, delete_conversation,
             create_namespace, list_namespaces, delete_namespace, share_namespace, revoke_namespace_access,
-            upload_document, delete_document, list_documents, download_document, get_namespace_access_list
+            upload_document, delete_document, list_documents, download_document, get_namespace_access_list,
+            get_user_namespace_access_level
         },
     },
     services::{luma::LumaService, db::{init_db_pool, run_test_query}},
@@ -109,6 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/namespaces/{id}/share", post(share_namespace))
         .route("/namespaces/{id}/revoke", post(revoke_namespace_access))
         .route("/namespaces/{id}/access", get(get_namespace_access_list))
+        .route("/namespaces/{namespace_id}/access-level", get(get_user_namespace_access_level))
         // Document routes
         .route("/documents/upload/{namespace_id}", post(upload_document))
         .route("/documents/{namespace_id}/{document_id}", delete(delete_document))
