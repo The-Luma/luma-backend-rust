@@ -11,7 +11,7 @@ use crate::models::models::{
     User, UserResponse, SearchUsersQuery, SearchUsersResponse,
     ChatResponse, Conversation, ConversationListItem, Namespace,
     DocumentResponse, DocumentListItem, NamespaceAccessResponse,
-    ChangeUsernameRequest,
+    ChangeUsernameRequest, ChangePasswordRequest,
 };
 use crate::services::auth;
 use crate::services::users;
@@ -131,6 +131,10 @@ impl LumaService {
 
     pub async fn change_username(&self, user_id: i32, req: ChangeUsernameRequest) -> Result<(), (StatusCode, String)> {
         users::update::change_username(self.db(), user_id, req).await
+    }
+
+    pub async fn change_password(&self, user_id: i32, req: ChangePasswordRequest) -> Result<(), (StatusCode, String)> {
+        users::update::change_password(self.db(), user_id, req).await
     }
 
     // CHAT METHODS

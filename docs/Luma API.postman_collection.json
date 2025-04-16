@@ -758,6 +758,138 @@
 					]
 				},
 				{
+					"name": "/account/password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"current_password\": \"current_password\",\n    \"new_password\": \"new_password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"password"
+							]
+						},
+						"description": "Change the password of the authenticated user. Requires current password verification for security."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"current_password\": \"current_password\",\n    \"new_password\": \"new_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"password"
+									]
+								},
+								"description": "Change the password of the authenticated user. Requires current password verification for security."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Password updated successfully\"\n}"
+						},
+						{
+							"name": "Error - Invalid Current Password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"current_password\": \"wrong_password\",\n    \"new_password\": \"new_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"password"
+									]
+								},
+								"description": "Change the password of the authenticated user. Requires current password verification for security."
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Invalid current password\"\n}"
+						},
+						{
+							"name": "Error - Invalid New Password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"current_password\": \"current_password\",\n    \"new_password\": \"weak\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"password"
+									]
+								},
+								"description": "Change the password of the authenticated user. Requires current password verification for security."
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Password must be at least 13 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character\"\n}"
+						}
+					]
+				},
+				{
 					"name": "/invitations",
 					"request": {
 						"method": "POST",

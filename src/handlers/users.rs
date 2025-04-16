@@ -1,5 +1,5 @@
 use axum::{
-    extract::{State, Path, Query},
+    extract::{State, Path, Query, Extension},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -9,7 +9,7 @@ use validator::Validate;
 use crate::handlers::error_response;
 use crate::models::models::{
     UserResponse, DeleteAccountRequest, SearchUsersQuery, SearchUsersResponse,
-    ChangeUsernameRequest,
+    ChangeUsernameRequest, ChangePasswordRequest, SuccessResponse,
 };
 
 use crate::services::luma::LumaService;
@@ -175,34 +175,32 @@ pub async fn delete_account(
 
 pub async fn change_username(
     State(service): State<LumaService>,
-    jar: CookieJar,
+    Extension(user): Extension<UserResponse>,
     Json(req): Json<ChangeUsernameRequest>,
-) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
-    // Validate request
-    req.validate()
-        .map_err(|e| error_response(StatusCode::BAD_REQUEST, e.to_string()))?;
+) -> Result<Json<SuccessResponse>, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .change_username(user.id, req)
+        .await
+        .map_err(|(status, error)| error_response(status, error))?;
 
-    // Extract access token from cookie
-    let access_token = jar
-        .get("access_token")
-        .ok_or_else(|| error_response(
-            StatusCode::UNAUTHORIZED,
-            "No access token provided".to_string()
-        ))?
-        .value()
-        .to_string();
+    Ok(Json(SuccessResponse {
+        success: true,
+        message: "Username updated successfully".to_string(),
+    }))
+}
 
-    // Validate token and get claims
-    let claims = service.validate_token(&access_token)
-        .map_err(|(status, msg)| error_response(status, msg))?;
+pub async fn change_password(
+    State(service): State<LumaService>,
+    Extension(user): Extension<UserResponse>,
+    Json(req): Json<ChangePasswordRequest>,
+) -> Result<Json<SuccessResponse>, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .change_password(user.id, req)
+        .await
+        .map_err(|(status, error)| error_response(status, error))?;
 
-    // Change username
-    service.change_username(claims.sub, req).await
-        .map_err(|(status, msg)| error_response(status, msg))?;
-
-    // Return success response
-    Ok(Json(serde_json::json!({
-        "success": true,
-        "message": "Username updated successfully"
-    })).into_response())
+    Ok(Json(SuccessResponse {
+        success: true,
+        message: "Password updated successfully".to_string(),
+    }))
 }

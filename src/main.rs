@@ -28,8 +28,8 @@ use crate::{
             get_user_namespace_access_level
         },
         users::{
-            change_username,
-        },
+            change_password, change_username
+        }
     },
     services::{luma::LumaService, db::{init_db_pool, run_test_query}},
 };
@@ -98,6 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/me", get(me))
         .route("/account", delete(delete_account))
         .route("/account/username", put(change_username))
+        .route("/account/password", put(change_password))
         .route("/logout", post(logout))
         .route("/users", get(search_users))
         .route("/users/{id}", get(get_user_by_id))

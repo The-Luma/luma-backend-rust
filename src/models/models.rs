@@ -170,6 +170,13 @@ pub struct ChangeUsernameRequest {
     pub password: String,
 }
 
+/// Request payload for changing password
+#[derive(Debug, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
 /// Request payload for searching users
 #[derive(Debug, Deserialize)]
 pub struct SearchUsersQuery {
@@ -327,4 +334,10 @@ pub struct ChunkInfo {
     pub count: usize,
     pub vector_ids: Vec<String>,
     pub embedding_dimension: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SuccessResponse {
+    pub success: bool,
+    pub message: String,
 } 
