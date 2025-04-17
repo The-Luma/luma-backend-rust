@@ -87,23 +87,23 @@ Detailed documentation is available in the [docs](docs/) directory:
 Create a `.env` file with the following:
 
 ```env
-# Server Configuration
-BACKEND_PORT=8000
-FRONTEND_URL=http://localhost:3000
+# PostgreSQL Configuration
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+POSTGRES_HOST=
+POSTGRES_PORT=
 
-# Database Configuration
-DATABASE_URL=postgresql://user:password@localhost:5432/luma
-
-# JWT Configuration
-JWT_SECRET=your-secret-key
-
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-key
-OPENAI_CHAT_MODEL=gpt-4-turbo-preview
-
-# Pinecone Configuration
-PINECONE_API_KEY=your-pinecone-key
-PINECONE_INDEX=your-index-name
+# Backend Configuration
+BACKEND_PORT=
+BACKEND_DB_CONNECTION=
+DATABASE_URL=
+BACKEND_JWT_SECRET=
+BACKEND_PINECONE_INDEX=
+BACKEND_PINECONE_API_KEY=
+BACKEND_OPENAI_API_KEY=
+BACKEND_OPENAI_ORG_ID=
+BACKEND_OPENAI_CHAT_MODEL=
 ```
 
 ##  Development
@@ -111,30 +111,32 @@ PINECONE_INDEX=your-index-name
 ### Project Structure
 
 ```
-src/
-├── handlers/           # API endpoint handlers
-├── models/             # Data models and schemas
-├── services/           # Business logic
-│   ├── auth/           # Authentication services
-│   ├── chat/           # Chat services
-│   └── documents/      # Document processing
-├── middleware/         # Request middleware
-├── config.rs           # Configuration management
-└── main.rs             # Application entry point
+luma-backend-rust/
+├── src/
+│   ├── main.rs                # Application entry point and server setup
+│   ├── config.rs              # Configuration management (.env load)
+│   ├── models/                # All models (types)
+│   ├── handlers/              # Request handlers and route definitions
+│   ├── services/              # Business logic and external service
+│   │    ├── auth/                  # Authentication services
+│   │    ├── users/                 # User management services
+│   │    ├── chats/                 # Chat processing services
+│   │    ├── documents/             # Document handling services
+│   │    ├── luma.rs                # Core Luma service logic (combines everything)
+│   │    ├── openai.rs              # OpenAI API integration
+│   │    ├── pinecone_ie.rs         # Pinecone vector database integration (ie = integrated embedding)
+│   │    ├── db.rs                  # Database integration
+│   │    └── files.rs               # File handling service
+│   └── middleware/            # Custom middleware components
+│         └── auth.rs            # Authentication middleware
+├── docs/                      # Documentation
+├── uploads/                   # File upload storage
+├── postgres/                  # Database migrations and setup
+├── Cargo.toml                 # Rust dependencies and project metadata
+├── docker-compose.yml         # Docker services configuration
+└── dockerfile                 # Docker build configuration
 ```
 
-### Running Tests
-
-```bash
-# Run all tests
-cargo test
-
-# Run with coverage
-cargo tarpaulin
-
-# Run specific test
-cargo test test_name
-```
 
 ##  Contributing
 
@@ -162,6 +164,8 @@ curl -X POST http://localhost:8000/api/chat/start \
   -H "Content-Type: application/json" \
   -d '{"namespace_id": 1}'
 ```
+
+More examples in Postman collection under `docs`.
 
 ##  Configuration Options
 
@@ -196,28 +200,6 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 - Including this software in a larger program may require the entire program to be licensed under AGPL-3.0
 
 For the full license text, see the [LICENSE](LICENSE) file or visit [GNU AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
-
-##  Deployment
-
-### Production Checklist
-
--  Set secure environment variables
--  Configure HTTPS
--  Set up database backups
--  Configure logging
--  Set up monitoring
--  Review security settings
-
-##  Status
-
--  Core Features
--  Authentication
--  Document Management
--  Chat System
--  Vector Search
--  Advanced Analytics (In Progress)
--  Real-time Notifications (In Progress)
-
 ---
 
 <div align="center">
