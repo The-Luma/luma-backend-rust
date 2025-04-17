@@ -223,6 +223,6 @@ For the full license text, see the [LICENSE](LICENSE) file or visit [GNU AGPL-3.
 <div align="center">
 
 
-[Report Bug](https://github.com/your-org/luma-backend-rust/issues) • [Request Feature](https://github.com/your-org/luma-backend-rust/issues)
+[Report Bug](https://github.com/The-Luma/luma-backend-rust/issues) • [Request Feature](https://github.com/The-Luma/luma-backend-rust/issues)
 
 </div>

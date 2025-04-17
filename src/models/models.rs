@@ -161,6 +161,22 @@ pub struct DeleteAccountRequest {
     pub password: String,
 }
 
+/// Request payload for changing username
+#[derive(Debug, Deserialize, Validate)]
+pub struct ChangeUsernameRequest {
+    #[validate(length(min = 3, max = 50, message = "Username must be between 3 and 50 characters"))]
+    pub new_username: String,
+    #[validate(length(min = 1, message = "Password is required"))]
+    pub password: String,
+}
+
+/// Request payload for changing password
+#[derive(Debug, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
 /// Request payload for searching users
 #[derive(Debug, Deserialize)]
 pub struct SearchUsersQuery {
@@ -246,6 +262,13 @@ pub struct Namespace {
     pub auth_level: Option<i32>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct NamespaceAccessResponse {
+    pub user: UserResponse,
+    pub auth_level: i32,
+    pub granted_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct NamespaceQuery {
     pub include_public: Option<bool>,
@@ -311,4 +334,10 @@ pub struct ChunkInfo {
     pub count: usize,
     pub vector_ids: Vec<String>,
     pub embedding_dimension: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SuccessResponse {
+    pub success: bool,
+    pub message: String,
 } 

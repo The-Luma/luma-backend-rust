@@ -595,7 +595,7 @@
 								"1"
 							]
 						},
-						"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
+						"description": "Admin endpoint to delete a user account. Requires admin role."
 					},
 					"response": [
 						{
@@ -614,14 +614,278 @@
 										"1"
 									]
 								},
-								"description": "Delete any user account by ID. Requires admin role. Admin cannot delete their own account through this endpoint."
+								"description": "Admin endpoint to delete a user account. Requires admin role."
 							},
 							"status": "No Content",
 							"code": 204,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [],
 							"cookie": [],
 							"body": ""
+						}
+					]
+				},
+				{
+					"name": "/account/username",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"new_username\": \"new_username\",\n    \"password\": \"current_password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/username",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"username"
+							]
+						},
+						"description": "Change the username of the authenticated user. Requires password verification for security."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_username\": \"new_username\",\n    \"password\": \"current_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/username",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"username"
+									]
+								},
+								"description": "Change the username of the authenticated user. Requires password verification for security."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Username updated successfully\"\n}"
+						},
+						{
+							"name": "Error - Invalid Password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_username\": \"new_username\",\n    \"password\": \"wrong_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/username",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"username"
+									]
+								},
+								"description": "Change the username of the authenticated user. Requires password verification for security."
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Invalid password\"\n}"
+						},
+						{
+							"name": "Error - Username Already Taken",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_username\": \"existing_username\",\n    \"password\": \"current_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/username",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"username"
+									]
+								},
+								"description": "Change the username of the authenticated user. Requires password verification for security."
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Username already taken\"\n}"
+						}
+					]
+				},
+				{
+					"name": "/account/password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"current_password\": \"current_password\",\n    \"new_password\": \"new_password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"password"
+							]
+						},
+						"description": "Change the password of the authenticated user. Requires current password verification for security."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"current_password\": \"current_password\",\n    \"new_password\": \"new_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"password"
+									]
+								},
+								"description": "Change the password of the authenticated user. Requires current password verification for security."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Password updated successfully\"\n}"
+						},
+						{
+							"name": "Error - Invalid Current Password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"current_password\": \"wrong_password\",\n    \"new_password\": \"new_password\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"password"
+									]
+								},
+								"description": "Change the password of the authenticated user. Requires current password verification for security."
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Invalid current password\"\n}"
+						},
+						{
+							"name": "Error - Invalid New Password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"current_password\": \"current_password\",\n    \"new_password\": \"weak\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/account/password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"account",
+										"password"
+									]
+								},
+								"description": "Change the password of the authenticated user. Requires current password verification for security."
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Password must be at least 13 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character\"\n}"
 						}
 					]
 				},
@@ -1011,7 +1275,7 @@
 								"revoke"
 							]
 						},
-						"description": "Share a namespace with another user. Requires authentication."
+						"description": "Revoke access to a namespace from a user. Requires authentication."
 					},
 					"response": [
 						{
@@ -1040,14 +1304,135 @@
 										"revoke"
 									]
 								},
-								"description": "Share a namespace with another user. Requires authentication."
+								"description": "Revoke access to a namespace from a user. Requires authentication."
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [],
 							"cookie": [],
-							"body": ""
+							"body": "{\n    \"message\": \"Namespace access revoked successfully\"\n}"
+						}
+					]
+				},
+				{
+					"name": "/namespaces/{nameSpaceId}/access",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/namespaces/16/access",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces",
+								"16",
+								"access"
+							]
+						},
+						"description": "Get list of users with access to a namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/16/access",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"16",
+										"access"
+									]
+								},
+								"description": "Get list of users with access to a namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"access_list\": [\n        {\n            \"user\": {\n                \"id\": 1,\n                \"username\": \"admin\",\n                \"email\": \"admin@example.com\",\n                \"role\": \"admin\"\n            },\n            \"auth_level\": 3,\n            \"granted_at\": \"2024-04-16T10:00:00Z\"\n        },\n        {\n            \"user\": {\n                \"id\": 2,\n                \"username\": \"user1\",\n                \"email\": \"user1@example.com\",\n                \"role\": \"user\"\n            },\n            \"auth_level\": 1,\n            \"granted_at\": \"2024-04-16T11:00:00Z\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "/namespaces/{nameSpaceId}/access-level",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/namespaces/16/access-level",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"namespaces",
+								"16",
+								"access-level"
+							]
+						},
+						"description": "Get the access level of the authenticated user for a specific namespace. Requires authentication."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/16/access-level",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"16",
+										"access-level"
+									]
+								},
+								"description": "Get the access level of the authenticated user for a specific namespace. Requires authentication."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"access_level\": 2\n    }\n}"
+						},
+						{
+							"name": "Error - Namespace Not Found",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/namespaces/999/access-level",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"namespaces",
+										"999",
+										"access-level"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": false,\n    \"error\": \"Namespace not found\"\n}"
 						}
 					]
 				}
