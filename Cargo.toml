@@ -1,12 +1,28 @@
 [package]
 name = "luma-backend-rust"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[package.metadata.sqlx]
+load_dotenv = true
+
 [dependencies]
-axum = "0.8.1"
-tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
-sqlx = { version = "0.8", features = ["runtime-tokio", "tls-native-tls", "postgres"] }
-dotenv = "0.15.0"
+axum = { version = "0.8.3", features = ["http2", "multipart"] }
+axum-extra = { version = "0.10.1", features = ["cookie"] }
+tower-http = { version = "0.6.2", features = ["cors"] }
+tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
+sqlx = { version = "0.8.4", features = ["runtime-tokio", "tls-native-tls", "postgres", "chrono", "macros"] }
+dotenvy = "0.15.7"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+chrono = { version = "0.4.40", features = ["serde"] }
+validator = { version = "0.20.0", features = ["derive"] }
+bcrypt = "0.17.0"
+jsonwebtoken = "9.3.1"
+uuid = { version = "1.7.0", features = ["v4", "serde"] }
+time = "0.3.41"
+async-openai = "0.28.1"
+pdf-extract = "0.9.0"
+reqwest = "0.12.15"

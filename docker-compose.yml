@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      network: host
+    container_name: luma-backend
+    ports:
+      - "3000:${BACKEND_PORT}"
+    environment:
+      RUST_LOG: ${BACKEND_LOG_LEVEL}
+      DATABASE_URL: ${DATABASE_URL}
+      BACKEND_JWT_SECRET: ${BACKEND_JWT_SECRET}
+    depends_on:
+      - postgres
+    networks:
+      - luma-network
+
+  postgres:
+    container_name: luma-postgres
+    image: postgres:latest
+    restart: always
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./postgres/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - luma-network
+
+volumes:
+  pgdata:
+
+networks:
+  luma-network:
+    driver: bridge
